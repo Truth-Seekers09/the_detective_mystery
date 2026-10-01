@@ -1,289 +1,74 @@
-# 🔍 The Hidden Truth
+# The Hidden Truth
 
-### An Interactive 2D Detective Mystery Game
+A Detective Mystery Game written in C++ set on our own college campus.
 
-**The Hidden Truth** is a 2D detective mystery game created in C++ as a Project-Based Learning (PBL) project.
+An important document has gone missing. You play the detective: walk around the campus, search for clues, question the people who had a reason to take it and decide who did it. Get it right and you solve the case. Get it wrong twice and the culprit walks free.
 
-The game is based on a fictional investigation. The player takes the role of a detective, visits different locations, searches for clues, checks evidence and interacts with suspects. The information collected during the investigation helps the player reach a final conclusion.
+All characters in the story are fictional. Only the places are real.
 
-The project brings together **Object-Oriented Programming (OOP)** and **Data Structures & Algorithms (DSA)** within a single playable application.
+## Why we built it
 
----
+We made this for our Project-Based Learning course (Data Structures and OOP with C++). Most of what we practice in class lives in small separate programs, so we wanted to see what it feels like when everything has to work together in one application.
 
-## 🎯 Project Objective
+A detective game turned out to be a good fit. Locations are connected, clues pile up, suspects wait to be questioned and sometimes you need to retrace your steps.
 
-The project focuses on building a simple and playable detective game while applying the programming concepts covered during the course.
+## How the game works
 
-The main objectives are:
+1. Read the case and start at one location on the campus.
+2. Walk between connected places and search each one for clues.
+3. Question the suspects as leads come up.
+4. Compare what you have found and see who the evidence points to.
+5. Make your accusation.
 
-- Build a 2D detective mystery game using C++.
-- Create a complete fictional investigation.
-- Allow the player to explore locations and collect information.
-- Include clues, evidence and suspect interactions.
-- Use OOP to organize different parts of the game.
-- Apply suitable data structures to different investigation tasks.
-- Provide a final deduction and result at the end of the case.
+Some places are locked until you find the right item. A wrong accusation costs you points and your final score depends on how well you investigated.
 
----
+## Where OOP and DSA come in
 
-## 🎮 Game Concept
+We use each concept only where the game needs it.
 
-The player begins with a mystery that needs to be solved.
+**Data Structures**
 
-Instead of receiving the answer directly, the player has to investigate the case and collect useful information.
-
-A typical investigation follows this flow:
-
-1. Start the case.
-2. Read the available case information.
-3. Visit connected locations.
-4. Search the locations for clues.
-5. Collect and review evidence.
-6. Interact with suspects.
-7. Compare the information collected during the investigation.
-8. Review possible suspects.
-9. Make the final deduction.
-10. Receive the final verdict and score.
-
-The correct conclusion depends on how the player understands and connects the information found during the case.
-
----
-
-## ✨ Key Features
-
-- 🔎 Mystery-based investigation
-- 🗺️ Multiple connected locations
-- 🔍 Clue collection
-- 📁 Evidence handling
-- 🗣️ Suspect interactions
-- 🧠 Investigation and analysis
-- ⚖️ Final deduction
-- 🏆 Result and scoring
-- 🌳 Use of DSA in game operations
-- 💻 C++ OOP-based structure
-
----
-
-## 🧩 Object-Oriented Programming
-
-OOP is used to divide the game into manageable components.
-
-Instead of keeping the entire game inside one part of the program, different responsibilities are handled through separate classes.
-
-### Major Classes
-
-- `Player`
-- `Suspect`
-- `Clue`
-- `Evidence`
-- `Location`
-- `Case`
-- `GameManager`
-- `InvestigationManager`
-
-### OOP Concepts
-
-| Concept | Use in the Project |
+| Concept | What it does in the game |
 |---|---|
-| Classes & Objects | Represent the main game entities |
-| Encapsulation | Keep related data and functions together |
-| Inheritance | Support related types of game entities |
-| Polymorphism | Allow related entities to behave differently |
-| Abstraction | Keep internal implementation separate from game interaction |
+| Graph and BFS | Models the campus map and finds the shortest route between places |
+| Stack | Remembers where you have been, so you can go back |
+| Queue | Lines up suspects to be questioned in the order their leads appeared |
+| Hash table | Finds a clue by its ID quickly |
+| Sorting | Orders your clues by importance and ranks the suspects |
+| Searching | Looks for a keyword among the clues you have found |
 
----
+**Object-Oriented Programming**
 
-## 📊 Data Structures & Algorithms
-
-Different DSA concepts are connected with different parts of the investigation.
-
-They are used where they provide a useful operation rather than being added as separate demonstrations.
-
-| DSA Concept | Use in the Game |
+| Concept | What it does in the game |
 |---|---|
-| Graph | Connect different game locations |
-| Stack | Store investigation history and support backtracking |
-| Queue | Maintain pending tasks and events |
-| Hashing | Find stored clues or evidence efficiently |
-| Tree | Organize case or investigation information |
-| Searching | Locate clues and other records |
-| Sorting | Arrange evidence or suspect information |
+| Classes and objects | Players, suspects, locations, clues and the case itself |
+| Encapsulation | Keeps the culprit hidden inside the case, so the rest of the game cannot read it |
+| Inheritance | Physical clues, witness statements and documents all build on one clue type |
+| Polymorphism | Each kind of clue is described differently when you examine it |
+| Abstraction | The general clue type defines what every clue must do and each kind fills in the details |
 
----
+## Our approach
 
-## 🏗️ System Architecture
+We are building the investigation logic first and keeping it separate from the graphics. That way the game can be played and tested early and the 2D SFML interface can be added on top without rewriting the game. The story is loaded from files, so changing the case does not mean changing the code.
 
-The game follows a simple flow from player input to the final result.
+## Team
 
-```text
-+------------------+
-|      INPUT       |
-|------------------|
-| Player Actions   |
-| Case Data        |
-| Clues / Evidence |
-| Locations        |
-+--------+---------+
-         |
-         v
-+------------------+
-|    PROCESSING    |
-|------------------|
-| Check Input      |
-| Update Game      |
-| Handle Events    |
-| Apply Game Rules |
-+--------+---------+
-         |
-         v
-+------------------+
-|    CORE LOGIC    |
-|------------------|
-| Investigation    |
-| Clue Matching    |
-| Suspect Analysis |
-| DSA Operations   |
-+--------+---------+
-         |
-         v
-+------------------+
-|    GAME DATA     |
-|------------------|
-| Case Information |
-| Clues / Evidence |
-| Suspects         |
-| Locations        |
-| Game Progress    |
-+--------+---------+
-         |
-         v
-+------------------+
-|      OUTPUT      |
-|------------------|
-| Case Progress    |
-| Final Deduction  |
-| Verdict          |
-| Score            |
-+------------------+
-```
+Team Truth Seekers (T152), Department of Computer Science & Engineering, Graphic Era (Deemed to be University). Our mentor is Prof. Dr. Jyoti Agarwal.
 
----
-
-## 🔄 Investigation Flow
-
-The investigation begins when a case is loaded.
-
-The player explores the available locations and performs actions according to the current stage of the case. Information discovered during exploration is added to the investigation records.
-
-Clues, evidence and suspect information are then reviewed as the case progresses. The game logic checks the player's actions and updates the current state of the investigation.
-
-Once the required information has been collected, the player can move to the final deduction and select the suspected culprit.
-
----
-
-## 🛠️ Technology Stack
-
-| Technology | Purpose |
-|---|---|
-| C++ | Main programming language |
-| SFML | 2D game interface and interaction |
-| File Handling | Store and load game-related information |
-| Visual Studio Code | Development environment |
-| Git & GitHub | Version control and project management |
-
----
-
-## 📂 Planned Game Modules
-
-The project is divided into smaller parts so that each feature can be developed and tested separately.
-
-```text
-The Hidden Truth
-│
-├── Game Management
-├── Player
-├── Case
-├── Locations
-├── Suspects
-├── Clues
-├── Evidence
-├── Investigation
-├── DSA Operations
-└── Final Deduction
-```
-
-Each module has a specific responsibility while remaining connected to the overall investigation.
-
----
-
-## 🚀 Development Plan
-
-The project is being developed in stages:
-
-**Phase 1: Planning and Design**
-- Prepare the mystery storyline.
-- Identify suspects, clues and locations.
-- Design the class structure.
-- Decide where each data structure will be used.
-
-**Phase 2: Core Development**
-- Create the main C++ classes.
-- Implement player movement.
-- Add locations, clues and suspects.
-- Implement the required DSA operations.
-
-**Phase 3: Integration**
-- Connect the individual modules.
-- Complete the investigation flow.
-- Add evidence analysis and final deduction.
-
-**Phase 4: Testing**
-- Test player movement and interactions.
-- Check clue and evidence handling.
-- Test different investigation paths.
-- Correct logical and gameplay issues.
-
----
-
-## 🎯 Expected Outcome
-
-The expected result is a working 2D prototype of **The Hidden Truth** in which a player can complete a fictional detective investigation from beginning to end.
-
-The final version is intended to demonstrate how C++ OOP and DSA concepts can work together inside the logic of a playable game.
-
----
-
-## 👥 Team
-
-**Team Name:** Truth Seekers  
-**Team ID:** T152
-
-| Team Member | Role |
+| Team member | Role |
 |---|---|
 | Karan Badhani | Team Lead |
 | Khushi Singal | Team Member |
 | Suraj Giri Goswami | Team Member |
 | Tanmay Arora | Team Member |
 
----
+## Progress
 
-## 📚 References
+- [x] Phase 1: Idea, Design and Proposal
+- [ ] Phase 2: core classes and data structures, a first playable version
+- [ ] Phase 3: the full investigation from start to final accusation
+- [ ] Final Phase: the 2D interface, testing and the complete prototype
 
-- SFML Official Documentation
-- C++ Reference
-- GeeksforGeeks - Data Structures
-- Microsoft Learn - C++ Documentation
+## Tools
 
----
-
-## 📌 Project Status
-
-**Current Stage:** Phase-I - Proposal and Design
-
-The project structure and investigation flow have been planned. Development of the main game modules will follow the finalized design.
-
----
-
-### 🔍 The Hidden Truth
-
-**Investigate the case. Examine the evidence. Make the deduction.**
+C++, SFML, Visual Studio Code, Git and GitHub.
