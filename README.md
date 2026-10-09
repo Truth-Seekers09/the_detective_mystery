@@ -8,9 +8,9 @@ All characters in the story are fictional. Only the places are real.
 
 ## Why we built it
 
-We made this for our Project-Based Learning course (Data Structures and OOP with C++). Most of what we practice in class lives in small separate programs, so we wanted to see what it feels like when everything has to work together in one application.
+We made this for our Project-Based Learning course (Data Structures and OOP with C++). Most of what we practice in class lives in small separate programs so we wanted to see what it feels like when everything has to work together in one application.
 
-A detective game turned out to be a good fit. Locations are connected, clues pile up, suspects wait to be questioned and sometimes you need to retrace your steps.
+A detective game turned out to be a good fit. Locations are connected, clues pile up, suspects wait to be questioned, and sometimes you need to retrace your steps.
 
 ## How the game works
 
@@ -24,14 +24,14 @@ Some places are locked until you find the right item. A wrong accusation costs y
 
 ## Where OOP and DSA come in
 
-We use each concept only where the game needs it.
+We use each concept only where the game needs it. Some of them arrive in the final phase as the progress list below shows.
 
 **Data Structures**
 
 | Concept | What it does in the game |
 |---|---|
 | Graph and BFS | Models the campus map and finds the shortest route between places |
-| Stack | Remembers where you have been, so you can go back |
+| Stack | Remembers where you have been so you can go back |
 | Queue | Lines up suspects to be questioned in the order their leads appeared |
 | Hash table | Finds a clue by its ID quickly |
 | Sorting | Orders your clues by importance and ranks the suspects |
@@ -42,14 +42,14 @@ We use each concept only where the game needs it.
 | Concept | What it does in the game |
 |---|---|
 | Classes and objects | Players, suspects, locations, clues and the case itself |
-| Encapsulation | Keeps the culprit hidden inside the case, so the rest of the game cannot read it |
+| Encapsulation | Keeps the culprit hidden inside the case so the rest of the game cannot read it |
 | Inheritance | Physical clues, witness statements and documents all build on one clue type |
 | Polymorphism | Each kind of clue is described differently when you examine it |
 | Abstraction | The general clue type defines what every clue must do and each kind fills in the details |
 
 ## Our approach
 
-We are building the investigation logic first and keeping it separate from the graphics. That way the game can be played and tested early and the 2D SFML interface can be added on top without rewriting the game. The story is loaded from files, so changing the case does not mean changing the code.
+We are building the investigation logic first and keeping it separate from the graphics. That way the game can be played and tested early and the 2D SFML interface can be added on top without rewriting the game. The story is loaded from files so changing the case does not mean changing the code.
 
 ## Team
 
@@ -64,10 +64,9 @@ Team Truth Seekers (T152), Department of Computer Science & Engineering, Graphic
 
 ## Progress
 
-- [x] Phase 1: Idea, Design and Proposal
-- [ ] Phase 2: core classes and data structures, a first playable version
-- [ ] Phase 3: the full investigation from start to final accusation
-- [ ] Final Phase: the 2D interface, testing and the complete prototype
+- [x] Phase 1: Idea, Design and Proposal 
+- [ ] Phase 2: A First basic working model: campus map, clues, going back, clue lookup, journal and the final accusation
+- [ ] Phase 3 (Final): The Advanced version with shortest routes, questioning suspects, ranking suspects, searching clues, scoring, more places and clues, the 2D SFML interface, and final testing
 
 ## Tools
 
