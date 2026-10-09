@@ -10,34 +10,32 @@ All characters in the story are fictional. Only the places are real.
 
 We made this for our Project-Based Learning course (Data Structures and OOP with C++). Most of what we practice in class lives in small separate programs so we wanted to see what it feels like when everything has to work together in one application.
 
-A detective game turned out to be a good fit. Locations are connected, clues pile up, suspects wait to be questioned, and sometimes you need to retrace your steps.
+A detective game turned out to be a good fit. Locations are connected, clues pile up, suspects wait to be questioned and sometimes you need to retrace your steps.
 
 ## How the game works
 
 1. Read the case and start at one location on the campus.
 2. Walk between connected places and search each one for clues.
-3. Question the suspects as leads come up.
+3. Read about the suspects and what each of them says.
 4. Compare what you have found and see who the evidence points to.
 5. Make your accusation.
 
-Some places are locked until you find the right item. A wrong accusation costs you points and your final score depends on how well you investigated.
+Some places are locked until you find the right item. You need enough evidence against the right person to win and two wrong accusations end the game.
 
 ## Where OOP and DSA come in
 
-We use each concept only where the game needs it. Some of them arrive in the final phase as the progress list below shows.
+We use each concept only where the game needs it. The rest arrive in the final phase as the progress list below shows.
 
-**Data Structures**
+**Data Structures (built in Phase 2)**
 
 | Concept | What it does in the game |
 |---|---|
-| Graph and BFS | Models the campus map and finds the shortest route between places |
+| Graph | Models the campus map and its locked places |
 | Stack | Remembers where you have been so you can go back |
-| Queue | Lines up suspects to be questioned in the order their leads appeared |
 | Hash table | Finds a clue by its ID quickly |
-| Sorting | Orders your clues by importance and ranks the suspects |
-| Searching | Looks for a keyword among the clues you have found |
+| Sorting | Orders your clues by importance |
 
-**Object-Oriented Programming**
+**Object-Oriented Programming (built in Phase 2)**
 
 | Concept | What it does in the game |
 |---|---|
@@ -46,6 +44,8 @@ We use each concept only where the game needs it. Some of them arrive in the fin
 | Inheritance | Physical clues, witness statements and documents all build on one clue type |
 | Polymorphism | Each kind of clue is described differently when you examine it |
 | Abstraction | The general clue type defines what every clue must do and each kind fills in the details |
+
+**Planned for Phase 3:** Shortest routes between places (BFS), a queue for questioning suspects, searching,ranking and scoring.
 
 ## Our approach
 
@@ -65,8 +65,8 @@ Team Truth Seekers (T152), Department of Computer Science & Engineering, Graphic
 ## Progress
 
 - [x] Phase 1: Idea, Design and Proposal 
-- [ ] Phase 2: A First basic working model: campus map, clues, going back, clue lookup, journal and the final accusation
-- [ ] Phase 3 (Final): The Advanced version with shortest routes, questioning suspects, ranking suspects, searching clues, scoring, more places and clues, the 2D SFML interface, and final testing
+- [ ] Phase 2: A First Basic working model: campus map, clues, going back, clue lookup, journal and the final accusation
+- [ ] Phase 3 (Final): the Advanced version with shortest routes, questioning suspects, ranking suspects, searching clues, scoring, more places,2D SFML interface and final testing
 
 ## Tools
 
