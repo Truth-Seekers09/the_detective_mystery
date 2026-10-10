@@ -16,7 +16,7 @@ protected:
     int locationId;          // where it is found
     int suspectId;           // suspect it concerns (-1 = none)
     bool incriminating;      
-    int importance;           
+    int importance;          
 
 public:
     Clue(const std::string& id, const std::string& name, const std::string& description,
@@ -33,6 +33,13 @@ public:
 
     virtual std::string getType() const = 0;   // pure virtual
     virtual void examine() const = 0;          // pure virtual
+};
+
+class PhysicalClue : public Clue {
+public:
+    using Clue::Clue;
+    std::string getType() const override;
+    void examine() const override;
 };
 
 #endif
