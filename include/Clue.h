@@ -42,4 +42,25 @@ public:
     void examine() const override;
 };
 
+class Testimony : public Clue {
+public:
+    using Clue::Clue;
+    std::string getType() const override;
+    void examine() const override;
+};
+
+class DocumentClue : public Clue {
+public:
+    using Clue::Clue;
+    std::string getType() const override;
+    void examine() const override;
+};
+
+// Factory: builds the right subclass from the text in clues.txt.
+// Returns nullptr if the type is unknown.
+std::unique_ptr<Clue> createClue(const std::string& type, const std::string& id,
+                                 const std::string& name, const std::string& description,
+                                 int locationId, int suspectId, bool incriminating,
+                                 int importance);
+
 #endif
