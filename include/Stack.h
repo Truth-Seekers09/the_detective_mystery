@@ -21,6 +21,7 @@ public:
     Stack() : topNode(nullptr), count(0) {}
     Stack(const Stack&) = delete;
     Stack& operator=(const Stack&) = delete;
+    ~Stack() { while (!isEmpty()) pop(); }
 
     void push(const T& value) {           // O(1)
         topNode = new Node(value, topNode);
@@ -35,6 +36,11 @@ public:
         delete old;
         --count;
         return value;
+    }
+
+    const T& peek() const {                // O(1)
+        if (isEmpty()) throw std::runtime_error("Stack is empty");
+        return topNode->data;
     }
 
     bool isEmpty() const { return topNode == nullptr; }
