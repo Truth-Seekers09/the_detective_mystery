@@ -1,0 +1,8 @@
+# id|name|description|locked(0/1)|requiredClueId (- = none)
+0|BTECH Block|One of the biggest blocks on campus always crowded with students and home to many college services.|0|-
+1|CSIT Block|Much like the BTECH Block in size and activity but on the far side of the campus, a 4-5 minute walk away.|0|-
+2|Old MCA Block|A smaller block than BTECH or CSIT just a few steps from the BTECH Block.|0|-
+3|Ravi Canteen|One of the college canteens close to the BTECH Block.|0|-
+4|Quick Bite Cafe|A large cafe close to the Old MCA Block.|0|-
+5|Library|One of the college libraries and the closest place to the BTECH Block.|0|-
+6|Exam Cell|The Exam Cell in the CSIT basement where sealed question papers are kept. Entry needs official permission.|1|C01
