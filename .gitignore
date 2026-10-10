@@ -1,0 +1,5 @@
+hiddentruth
+run_tests
+*.o
+*.exe
+.vscode/
