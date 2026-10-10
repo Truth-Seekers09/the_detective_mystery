@@ -4,7 +4,7 @@
 #include <stdexcept>
 
 // Stack (LIFO) built on a singly linked list.
-// Game use: the player's movement history  so the "back" command can return
+// Game use: the player's movement history so the "back" command can return
 // to the previously visited location.
 template <typename T>
 class Stack {
@@ -25,6 +25,16 @@ public:
     void push(const T& value) {           // O(1)
         topNode = new Node(value, topNode);
         ++count;
+    }
+
+    T pop() {                              // O(1)
+        if (isEmpty()) throw std::runtime_error("Stack underflow");
+        Node* old = topNode;
+        T value = old->data;
+        topNode = old->next;
+        delete old;
+        --count;
+        return value;
     }
 
     bool isEmpty() const { return topNode == nullptr; }
