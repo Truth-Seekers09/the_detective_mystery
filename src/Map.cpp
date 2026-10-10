@@ -14,4 +14,9 @@ bool Map::addEdge(int a, int b) {
     }
     return true;
 }
+bool Map::areConnected(int a, int b) const {
+    if (!isValid(a) || !isValid(b)) return false;
+    return std::find(adj[a].begin(), adj[a].end(), b) != adj[a].end();
+}
+
 
