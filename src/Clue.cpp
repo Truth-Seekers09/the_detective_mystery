@@ -22,3 +22,15 @@ void DocumentClue::examine() const {
     std::cout << "  [DOCUMENT] " << name << " (" << id << ")\n"
               << "  You read it carefully: " << description << "\n";
 }
+std::unique_ptr<Clue> createClue(const std::string& type, const std::string& id,
+                                 const std::string& name, const std::string& description,
+                                 int locationId, int suspectId, bool incriminating,
+                                 int importance) {
+    if (type == "PHYSICAL")
+        return std::unique_ptr<Clue>(new PhysicalClue(id, name, description, locationId, suspectId, incriminating, importance));
+    if (type == "TESTIMONY")
+        return std::unique_ptr<Clue>(new Testimony(id, name, description, locationId, suspectId, incriminating, importance));
+    if (type == "DOCUMENT")
+        return std::unique_ptr<Clue>(new DocumentClue(id, name, description, locationId, suspectId, incriminating, importance));
+    return nullptr;
+}
