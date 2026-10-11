@@ -1,0 +1,11 @@
+# locationA locationB (a direct walkable route)
+# Cluster near the BTECH Block
+0 2
+0 3
+0 4
+0 5
+2 4
+# The CSIT Block stands apart from the rest
+0 1
+# The Exam Cell is in the CSIT basement
+1 6
