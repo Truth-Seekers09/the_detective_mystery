@@ -1,0 +1,2 @@
+# title|crime|culpritId|requiredEvidence|intro
+The Hidden Truth|stole the sealed Data Structures semester paper from the Exam Cell|0|3|On the morning of the Data Structures semester exam, the sealed question paper is found missing from the Exam Cell in the CSIT basement. The exam starts at 10 AM and the Controller of Examinations wants the thief found before the paper spreads any further. Your authorisation letter is waiting in the BTECH Block. Search the campus, collect the clues and name the culprit.
