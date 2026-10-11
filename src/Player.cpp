@@ -12,3 +12,8 @@ bool Player::goBack() {
     ++moves;
     return true;
 }
+bool Player::addClue(Clue* clue) {
+    if (!clue || hasClue(clue->getId())) return false;
+    journal.push_back(clue);
+    return true;
+}
