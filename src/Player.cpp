@@ -17,3 +17,8 @@ bool Player::addClue(Clue* clue) {
     journal.push_back(clue);
     return true;
 }
+bool Player::hasClue(const std::string& clueId) const {
+    for (const Clue* c : journal)
+        if (c->getId() == clueId) return true;
+    return false;
+}
