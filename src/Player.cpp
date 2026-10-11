@@ -22,3 +22,9 @@ bool Player::hasClue(const std::string& clueId) const {
         if (c->getId() == clueId) return true;
     return false;
 }
+int Player::countIncriminating(int suspectId) const {
+    int n = 0;
+    for (const Clue* c : journal)
+        if (c->getSuspectId() == suspectId && c->isIncriminating()) ++n;
+    return n;
+}
