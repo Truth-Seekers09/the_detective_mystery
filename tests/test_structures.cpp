@@ -7,6 +7,20 @@
 #include "Clue.h"
 #include "Map.h"
 #include "Sorting.h"
+#include "Stack.h"
+
+static void testStack() {
+    Stack<int> s;
+    assert(s.isEmpty());
+    s.push(1); s.push(2); s.push(3);
+    assert(s.size() == 3 && s.peek() == 3);
+    assert(s.pop() == 3 && s.pop() == 2 && s.pop() == 1);
+    assert(s.isEmpty());
+    bool threw = false;
+    try { s.pop(); } catch (const std::exception&) { threw = true; }
+    assert(threw);
+    std::cout << "Stack: OK\n";
+}
 
 static void testGraph() {
     Map m;
@@ -36,6 +50,7 @@ static void testSorting() {
 }
 
 int main() {
+    testStack();
     testGraph();
     testSorting();
     std::cout << "All tests passed.\n";
