@@ -263,3 +263,69 @@ void GameManager::cmdSearch() {
     }
     if (!foundAny) std::cout << "You search carefully but find nothing new here.\n";
 }
+
+void GameManager::cmdJournal() const {
+    if (player.getJournal().empty()) {
+        std::cout << "Your journal is empty. Try 'search'.\n";
+        return;
+    }
+    std::vector<Clue*> sorted = player.getJournal();  
+    sortCluesByImportance(sorted);
+    std::cout << "\nJournal (" << sorted.size() << " of " << clues.size() << " clues):\n";
+    for (const Clue* c : sorted)
+        std::cout << "  " << c->getId() << "  importance " << c->getImportance() << "  "
+                  << c->getName() << " [" << c->getType() << "]\n";
+}
+
+void GameManager::cmdClue(const std::string& arg) const {
+    if (arg.empty()) {
+        std::cout << "Usage: clue <id>, for example: clue C02\n";
+        return;
+    }
+    Clue* c = clueTable.find(toUpper(arg));      // hash table lookup
+    if (!c) std::cout << "No clue has the id " << toUpper(arg) << ".\n";
+    else if (!player.hasClue(c->getId())) std::cout << "You haven't found that clue yet.\n";
+    else c->examine();                           
+}
+
+void GameManager::cmdSuspects() const {
+    std::cout << "\nSuspects:\n";
+    for (const Suspect& s : suspects) {
+        std::cout << "  [" << s.getId() << "] " << s.getName() << ", " << s.getRole() << "\n"
+                  << "      Motive: " << s.getMotive() << "\n"
+                  << "      Alibi:  " << s.getAlibi() << "\n";
+    }
+}
+
+void GameManager::cmdAccuse(const std::string& arg) {
+    int id = 0;
+    if (!toInt(arg, id) || id < 0 || id >= static_cast<int>(suspects.size())) {
+        std::cout << "Usage: accuse <number>. Use 'suspects' to see the numbers.\n";
+        return;
+    }
+    const Suspect& s = suspects[id];
+
+    if (!theCase.isCulprit(id)) {
+        ++wrongAccusations;
+        std::cout << "\nYou accuse " << s.getName() << ", but the evidence doesn't hold up. "
+                  << "You have made " << wrongAccusations << " wrong accusation(s).\n";
+        if (wrongAccusations >= 2) {
+            std::cout << "Two wrong accusations. The real culprit walks free. GAME OVER.\n";
+            running = false;
+        }
+        return;
+    }
+
+    int have = player.countIncriminating(id), need = theCase.getRequiredEvidence();
+    if (have < need) {
+        std::cout << "\nYou suspect the right person, but you only have " << have
+                  << " piece(s) of incriminating evidence and need " << need
+                  << ". Keep investigating.\n";
+        return;
+    }
+    std::cout << "\nCASE SOLVED! " << s.getName() << " " << theCase.getCrime()
+              << ". Your evidence leaves no room for doubt.\n"
+              << "Moves: " << player.getMoves() << "   Clues: " << player.getJournal().size()
+              << "   Wrong accusations: " << wrongAccusations << "\n";
+    running = false;
+}
