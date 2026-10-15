@@ -153,3 +153,113 @@ bool GameManager::loadClues() {
     }
     return !clues.empty();
 }
+
+// ---------------------------------------------------------------- game loop
+
+void GameManager::run() {
+    std::cout << "\n=== " << theCase.getTitle() << " ===\n"
+              << theCase.getIntro() << "\n";
+    printHelp();
+    cmdLook();
+
+    std::string line;
+    while (running) {
+        std::cout << "\n> ";
+        if (!std::getline(std::cin, line)) break;   // end of input
+        std::istringstream in(line);
+        std::string cmd, arg;
+        in >> cmd;
+        std::getline(in, arg);
+        cmd = toLower(cmd);
+        arg = trim(arg);
+
+        if (cmd.empty()) continue;
+        else if (cmd == "help") printHelp();
+        else if (cmd == "look") cmdLook();
+        else if (cmd == "go") cmdGo(arg);
+        else if (cmd == "back") cmdBack();
+        else if (cmd == "search") cmdSearch();
+        else if (cmd == "journal") cmdJournal();
+        else if (cmd == "clue") cmdClue(arg);
+        else if (cmd == "suspects") cmdSuspects();
+        else if (cmd == "accuse") cmdAccuse(arg);
+        else if (cmd == "quit" || cmd == "exit") running = false;
+        else std::cout << "Unknown command. Type 'help'.\n";
+    }
+    std::cout << "\nThanks for playing.\n";
+}
+
+void GameManager::printHelp() const {
+    std::cout << "\nCommands:\n"
+              << "  look              describe where you are and the exits\n"
+              << "  go <number>       move to a connected location\n"
+              << "  back              return to the previous location (stack)\n"
+              << "  search            search this location for clues\n"
+              << "  journal           your clues, most important first (sorting)\n"
+              << "  clue <id>         re-read a collected clue, e.g. clue C02 (hash table)\n"
+              << "  suspects          list the suspects\n"
+              << "  accuse <number>   name the culprit\n"
+              << "  quit\n";
+}
+
+void GameManager::cmdLook() const {
+    const Location& here = map.getLocation(player.getLocation());
+    std::cout << "\n-- " << here.getName() << " --\n" << here.getDescription() << "\nExits:\n";
+    for (int id : map.neighbours(here.getId())) {
+        const Location& l = map.getLocation(id);
+        std::cout << "  [" << id << "] " << l.getName() << (l.isLocked() ? "  (locked)" : "") << "\n";
+    }
+}
+
+void GameManager::cmdGo(const std::string& arg) {
+    int target = 0;
+    if (!toInt(arg, target) || !map.isValid(target)) {
+        std::cout << "Usage: go <number>. Use 'look' to see the exits.\n";
+        return;
+    }
+    if (!map.areConnected(player.getLocation(), target)) {
+        std::cout << "You can't get there directly from here.\n";
+        return;
+    }
+    if (map.getLocation(target).isLocked()) {
+        std::cout << "The " << map.getLocation(target).getName()
+                  << " is locked. You need to find a way to open it.\n";
+        return;
+    }
+    player.moveTo(target);
+    cmdLook();
+}
+
+void GameManager::cmdBack() {
+    if (!player.goBack()) {
+        std::cout << "There is nowhere to go back to yet.\n";
+        return;
+    }
+    cmdLook();
+}
+
+void GameManager::collectClue(Clue* clue) {
+    if (!player.addClue(clue)) return;
+    clue->examine();
+
+   
+    for (int i = 0; i < map.size(); ++i) {
+        Location& loc = map.getLocation(i);
+        if (loc.isLocked() && loc.getRequiredClueId() == clue->getId()) {
+            loc.unlock();
+            std::cout << "  This unlocks the " << loc.getName() << "!\n";
+        }
+    }
+}
+
+void GameManager::cmdSearch() {
+    bool foundAny = false;
+    for (const std::unique_ptr<Clue>& c : clues) {
+        if (c->getLocationId() == player.getLocation() && !player.hasClue(c->getId())) {
+            std::cout << "\nYou found something!\n";
+            collectClue(c.get());
+            foundAny = true;
+        }
+    }
+    if (!foundAny) std::cout << "You search carefully but find nothing new here.\n";
+}
