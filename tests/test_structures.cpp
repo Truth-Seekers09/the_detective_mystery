@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "Clue.h"
+#include "ClueTable.h"
 #include "Map.h"
 #include "Player.h"
 #include "Sorting.h"
@@ -21,6 +22,19 @@ static void testStack() {
     try { s.pop(); } catch (const std::exception&) { threw = true; }
     assert(threw);
     std::cout << "Stack: OK\n";
+}
+
+static void testHashTable() {
+    PhysicalClue a("C01", "Glass", "d", 0, -1, false, 1);
+    PhysicalClue b("C02", "Key", "d", 0, -1, false, 1);
+    PhysicalClue c("C03", "Note", "d", 0, -1, false, 1);
+    ClueTable t(1);                       // one bucket forces every key to collide
+    t.insert("C01", &a); t.insert("C02", &b); t.insert("C03", &c);
+    assert(t.size() == 3 && t.longestChain() == 3);
+    assert(t.find("C02") == &b && t.find("C99") == nullptr);
+    t.insert("C02", &c);                  // same key replaces the value
+    assert(t.size() == 3 && t.find("C02") == &c);
+    std::cout << "Hash table: OK\n";
 }
 
 static void testGraph() {
@@ -64,6 +78,7 @@ static void testPlayer() {
 
 int main() {
     testStack();
+    testHashTable();
     testGraph();
     testSorting();
     testPlayer();
