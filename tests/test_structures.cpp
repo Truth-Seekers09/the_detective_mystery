@@ -6,6 +6,7 @@
 
 #include "Clue.h"
 #include "Map.h"
+#include "Player.h"
 #include "Sorting.h"
 #include "Stack.h"
 
@@ -49,10 +50,23 @@ static void testSorting() {
     std::cout << "Sorting: OK\n";
 }
 
+static void testPlayer() {
+    Player p(0);
+    PhysicalClue a("C01", "Glass", "d", 0, 1, true, 3);
+    p.moveTo(2); p.moveTo(5);
+    assert(p.getLocation() == 5 && p.getMoves() == 2);
+    assert(p.goBack() && p.getLocation() == 2);
+    assert(p.goBack() && p.getLocation() == 0 && !p.goBack());
+    assert(p.addClue(&a) && !p.addClue(&a));
+    assert(p.countIncriminating(1) == 1 && p.countIncriminating(0) == 0);
+    std::cout << "Player + history stack: OK\n";
+}
+
 int main() {
     testStack();
     testGraph();
     testSorting();
+    testPlayer();
     std::cout << "All tests passed.\n";
     return 0;
 }
