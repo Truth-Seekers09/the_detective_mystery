@@ -1,0 +1,4 @@
+# id|name|role|motive|alibi|statement
+0|Anand Verma|Lab Assistant, CSIT Block|He is deep in personal debt.|Says he left college at 6:30 PM and went straight home.|"I left at half past six and went home. I haven't been near the Exam Cell in weeks."
+1|Neha Kapoor|Final-year student|She has a backlog in this subject and is afraid of failing again.|Says she studied at Ravi Canteen until it closed at 10:30 PM.|"Yes, I'm worried about this paper but I was at the canteen with my notes all evening."
+2|Ms. Seema Joshi|Library assistant|She stayed back late alone with a large bag.|Says she was listing returned books until 10 PM.|"I stayed late to list the returned books. The bag is full of library books."
