@@ -1,0 +1,9 @@
+# id|type(PHYSICAL/TESTIMONY/DOCUMENT)|name|description|locationId|suspectId(-1 none)|incriminating(0/1)|importance(1-5)
+C01|DOCUMENT|Authorisation Letter|A letter from the Controller of Examinations allowing you to enter the Exam Cell and question staff.|0|-1|0|2
+C02|PHYSICAL|Slit Paper Envelope|The sealed envelope is slit open neatly and empty. The door lock shows no damage so the thief entered with a proper access card.|6|-1|0|3
+C03|DOCUMENT|Card Swipe Log|The door log shows card 2207 issued to the CSIT lab assistant used at 11:52 PM long after he says he went home.|6|0|1|5
+C04|DOCUMENT|Loan Reminder|A final reminder for an unpaid personal loan addressed to Anand Verma and left in a lab drawer.|1|0|1|3
+C05|DOCUMENT|Crumpled Printout|Crumpled pages from the stolen paper thrown in a bin in the Old MCA Block. Someone copied it in a hurry.|2|0|1|5
+C06|TESTIMONY|Canteen Owner's Statement|The canteen owner says Neha Kapoor sat at a corner table with her notes until closing time at 10:30 PM looking anxious about the exam.|3|1|0|3
+C07|DOCUMENT|Late-Stay Slip|A slip showing Ms. Seema Joshi stayed in the library until 10 PM. It looks suspicious but she was only packing returned books.|5|2|0|2
+C08|TESTIMONY|Cafe Manager's Statement|The manager remembers a man in a grey lab coat handing a folded sheet to two students at a corner table at 7:45 AM just before the exam.|4|0|1|4
