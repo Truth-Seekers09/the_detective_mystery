@@ -18,6 +18,10 @@ static void testGraph() {
     assert(m.neighbours(1).size() == 2);
     assert(m.neighbours(3).empty());                        // isolated location
 
+    m.addLocation(Location(4, "Locked room", "d", true, "C01"));
+    assert(m.getLocation(4).isLocked());
+    m.getLocation(4).unlock();
+    assert(!m.getLocation(4).isLocked());
     std::cout << "Graph (adjacency list): OK\n";
 }
 
