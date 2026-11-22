@@ -1,0 +1,4 @@
+# id|name|description|locked(0/1)|requiredClueId (- = none)
+0|BTECH Block|The practice case starts here, in the busy BTECH Block.|0|-
+1|CSIT Block|The lab block, a short walk away.|0|-
+2|Petroleum Block|A quiet old block. It is locked until you hold the Practice Pass.|1|C01

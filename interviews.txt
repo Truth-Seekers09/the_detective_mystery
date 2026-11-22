@@ -1,0 +1,5 @@
+# suspectId|requiredClueId (- = none)|line
+0|-|"I only look after the office. Ask me anything."
+0|C04|"Yes, the window was open. I did see someone in a lab coat."
+1|-|"I was at home. I never went near the BTECH office."
+1|C02|"That page proves nothing. Anyone could have dropped it."

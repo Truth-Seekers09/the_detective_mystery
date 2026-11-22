@@ -1,0 +1,2 @@
+# clueA|clueB|resultClueId
+C02|C03|D01
