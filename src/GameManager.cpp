@@ -283,6 +283,90 @@ bool GameManager::loadConnections() {
     }
     return true;
 }
+bool GameManager::loadSuspects() {
+    std::vector<std::string> lines;
+    if (!readLines(dataDir + "/suspects.txt", lines)) return false;
+    for (const std::string& line : lines) {
+        std::vector<std::string> f = split(line, '|');
+        int id = 0, where = 0;
+        if (f.size() != 7 || !toInt(f[0], id) || id != static_cast<int>(suspects.size()) ||
+            !toInt(f[6], where) || !map.isValid(where)) {
+            std::cerr << "Error: bad line in suspects.txt: " << line << "\n";
+            return false;
+        }
+        suspects.push_back(Suspect(id, f[1], f[2], f[3], f[4], f[5], where));
+    }
+    return !suspects.empty();
+}
+
+bool GameManager::loadClues() {
+    std::vector<std::string> lines;
+    if (!readLines(dataDir + "/clues.txt", lines)) return false;
+    for (const std::string& line : lines) {
+        std::vector<std::string> f = split(line, '|');
+        int loc = 0, suspect = 0, incr = 0, importance = 0;
+        if (f.size() != 8 || !toInt(f[4], loc) || !toInt(f[5], suspect) ||
+            !toInt(f[6], incr) || !toInt(f[7], importance) ||
+            !(map.isValid(loc) || loc == -1) ||   // -1 = a deduced clue, never lying around
+            suspect >= static_cast<int>(suspects.size())) {
+            std::cerr << "Error: bad line in clues.txt: " << line << "\n";
+            return false;
+        }
+        std::unique_ptr<Clue> clue =
+            createClue(f[1], f[0], f[2], f[3], loc, suspect, incr == 1, importance);
+        if (!clue) {
+            std::cerr << "Error: unknown clue type in clues.txt: " << f[1] << "\n";
+            return false;
+        }
+        clueTable.insert(clue->getId(), clue.get());
+        clues.push_back(std::move(clue));
+    }
+    return !clues.empty();
+}
+
+bool GameManager::loadInterviews() {
+    std::vector<std::string> lines;
+    if (!readLines(dataDir + "/interviews.txt", lines)) return false;
+    for (std::size_t i = 0; i < suspects.size(); ++i) interviews.emplace_back();
+    for (const std::string& line : lines) {
+        std::vector<std::string> f = split(line, '|');
+        int id = 0;
+        if (f.size() != 3 || !toInt(f[0], id) || id < 0 ||
+            id >= static_cast<int>(suspects.size())) {
+            std::cerr << "Error: bad line in interviews.txt: " << line << "\n";
+            return false;
+        }
+        if (f[1] != "-" && !clueTable.find(f[1])) {
+            std::cerr << "Error: interviews.txt names an unknown clue: " << f[1] << "\n";
+            return false;
+        }
+        interviews[id].enqueue(InterviewLine{f[1], f[2]});
+    }
+    return true;
+}
+
+// ---------------------------------------------------------------- game loop
+
+void GameManager::begin() {
+    std::cout << "\n=== " << theCase.getTitle() << " ===\n"
+              << theCase.getIntro() << "\n"
+              << "Difficulty: " << difficulty.name << "  (" << difficulty.minutes
+              << " minutes, " << difficulty.proofsNeeded << " proofs needed)\n";
+    printHelp();
+    cmdLook();
+}
+
+void GameManager::run() {
+    begin();
+    std::string line;
+    while (running) {
+        std::cout << "\n> ";
+        if (!std::getline(std::cin, line)) break;   // end of input
+        handleLine(line);
+    }
+    std::cout << "\nThanks for playing.\n";
+}
+
 
 
 
