@@ -61,4 +61,67 @@ function detectivePortraitSVG(){
   <ellipse cx="43" cy="43" rx="2" ry="2.4" fill="#1b1410"/><ellipse cx="57" cy="43" rx="2" ry="2.4" fill="#1b1410"/><path d="M44 53 Q50 56 56 53" stroke="#6a2f2a" stroke-width="2" fill="none" stroke-linecap="round"/>
   <ellipse cx="50" cy="30" rx="30" ry="6" fill="#3a2f27"/><path d="M33 30 Q33 10 50 10 Q67 10 67 30Z" fill="#4a3b30"/><rect x="33" y="24" width="34" height="5" fill="#241b15"/></svg>`;
 }
+// ---------------- sound (all synthesised, no files needed) ----------------
+const Sfx = (()=>{
+  let ctx=null, master=null, muted=false, ambient=null, vol=.5;
+  function ensure(){
+    if(!ctx){ try{ ctx = new (window.AudioContext||window.webkitAudioContext)(); master = ctx.createGain(); master.gain.value = muted?0:vol; master.connect(ctx.destination);}catch(e){ctx=null} }
+    if(ctx && ctx.state==='suspended') ctx.resume();
+    return ctx;
+  }
+  function tone(f,d,type='sine',v=.2,when=0,slide=0){
+    if(!ensure()) return; const t=ctx.currentTime+when, o=ctx.createOscillator(), g=ctx.createGain();
+    o.type=type; o.frequency.setValueAtTime(f,t); if(slide) o.frequency.exponentialRampToValueAtTime(Math.max(30,f+slide),t+d);
+    g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(v,t+.01); g.gain.exponentialRampToValueAtTime(.0001,t+d);
+    o.connect(g); g.connect(master); o.start(t); o.stop(t+d+.02);
+  }
+  function noise(d,v=.15,freq=900,when=0,q=1){
+    if(!ensure()) return; const t=ctx.currentTime+when, n=Math.floor(ctx.sampleRate*d), b=ctx.createBuffer(1,n,ctx.sampleRate), a=b.getChannelData(0);
+    for(let i=0;i<n;i++) a[i]=(Math.random()*2-1)*(1-i/n);
+    const s=ctx.createBufferSource(); s.buffer=b; const f=ctx.createBiquadFilter(); f.type='bandpass'; f.frequency.value=freq; f.Q.value=q;
+    const g=ctx.createGain(); g.gain.value=v; s.connect(f); f.connect(g); g.connect(master); s.start(t);
+  }
+  // Slow-attack sine, for soft swells (the opening animation).
+  function swell(f,d,v,when=0){
+    if(!ensure()) return; const t=ctx.currentTime+when, o=ctx.createOscillator(), g=ctx.createGain();
+    o.type='sine'; o.frequency.value=f; g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(v,t+d*.55); g.gain.linearRampToValueAtTime(.0001,t+d);
+    o.connect(g); g.connect(master); o.start(t); o.stop(t+d+.05);
+  }
+  return {
+    unlock(){ ensure(); },
+    setVolume(v){ vol=Math.max(0,Math.min(1,v)); if(master&&!muted) master.gain.value=vol; },
+    toggle(){ muted=!muted; if(master) master.gain.value=muted?0:vol; if(window.__theme) window.__theme.muted=muted; return muted; },
+    isMuted(){ return muted; },
+    step(){ noise(.07,.05+Math.random()*.03,500+Math.random()*300,0,2); },
+    click(){ tone(660,.07,'triangle',.12); },
+    open(){ tone(300,.12,'sine',.12); tone(450,.14,'sine',.1,.06); },
+    close(){ tone(450,.09,'sine',.1); tone(300,.12,'sine',.1,.05); },
+    find(){ [784,988,1319].forEach((f,i)=>tone(f,.5,'sine',.16,i*.09)); tone(1568,.7,'triangle',.07,.3); },
+    deduce(){ [523,659,784,1047,1319].forEach((f,i)=>tone(f,.4,'triangle',.13,i*.07)); },
+    lock(){ tone(140,.2,'square',.1); tone(110,.25,'square',.1,.1); },
+    travel(){ noise(.35,.07,350,0,.8); tone(220,.3,'sine',.05,0,60); },
+    talk(){ tone(280+Math.random()*60,.05,'square',.025); },
+    win(){ [523,659,784,1047].forEach((f,i)=>tone(f,.9,'triangle',.16,i*.16)); tone(1568,1.6,'sine',.12,.7); },
+    lose(){ [392,349,311,261].forEach((f,i)=>tone(f,.8,'sawtooth',.09,i*.25)); },
+    // Opening: a soft rising swell (open fifths in A, the key of the background music).
+    whoosh(){ swell(110,2.2,.08); swell(165,2.2,.05,.1); swell(220,2.2,.035,.2); swell(330,2.2,.02,.3); },
+    // Opening flashes: one gentle bell note each, climbing the A-minor scale, over a quiet low pulse.
+    hit(i=0){ const f=[220,261.6,329.6,392,440,523.3][i%6]; tone(f,.45,'sine',.11); tone(f*2,.3,'sine',.035,.01); tone(55,.45,'sine',.1); },
+    fanfare(){ [392,523,659,784].forEach((f,i)=>tone(f,.5,'triangle',.15,i*.14)); [523,659,784,1047].forEach((f,i)=>tone(f,1.6,'triangle',.13,.7+i*.02)); tone(1568,1.8,'sine',.09,.9); noise(.6,.08,3500,.65,.5); },
+    startAmbient(){
+      if(!ensure()||ambient) return;
+      // Dark, slow pad in A minor with a soft echo and the occasional low note. Everything is synthesised.
+      const bus=ctx.createGain(); bus.gain.value=.5; bus.connect(master);
+      const d=ctx.createDelay(1.2); d.delayTime.value=.55; const fb=ctx.createGain(); fb.gain.value=.42; d.connect(fb); fb.connect(d); d.connect(bus);
+      const pad=ctx.createGain(); pad.gain.value=.05; pad.connect(bus); pad.connect(d);
+      const lfo=ctx.createOscillator(), lg=ctx.createGain(); lfo.frequency.value=.08; lg.gain.value=.025; lfo.connect(lg); lg.connect(pad.gain); lfo.start();
+      [55,82.4,110,164.8,196].forEach((f,i)=>{ const o=ctx.createOscillator(); o.type=i%2?'triangle':'sine'; o.frequency.value=f*(1+(i-2)*.0015); const g=ctx.createGain(); g.gain.value=.5/(1+i*.4); o.connect(g); g.connect(pad); o.start(); });
+      const scale=[220,261.6,329.6,392,440,523.3]; let alive=true;
+      (function note(){ if(!alive||!ctx) return; if(!muted){ const f=scale[(Math.random()*scale.length)|0]/(Math.random()<.4?2:1), t=ctx.currentTime, o=ctx.createOscillator(), g=ctx.createGain(); o.type='sine'; o.frequency.value=f; g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(.07,t+.02); g.gain.exponentialRampToValueAtTime(.0001,t+3.2); o.connect(g); g.connect(bus); g.connect(d); o.start(t); o.stop(t+3.3); } setTimeout(note,2600+Math.random()*4200); })();
+      ambient=bus;
+      // Optional: drop your own royalty-free track at assets/sounds/theme.mp3 and it is used instead.
+      fetch('/assets/sounds/theme.mp3',{method:'HEAD'}).then(r=>{ if(r.ok){ alive=false; pad.gain.value=0; const a=new Audio('/assets/sounds/theme.mp3'); a.loop=true; a.volume=.35; a.play().catch(()=>{}); window.__theme=a; } }).catch(()=>{});
+    }
+  };
+})();
 
