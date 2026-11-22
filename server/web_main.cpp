@@ -160,5 +160,115 @@ int main(int argc, char* argv[]) {
     svr.set_post_routing_handler([](const httplib::Request&, httplib::Response& res) {
         res.set_header("Cache-Control", "no-store");
     });
+    svr.Get("/api/ping", [](const httplib::Request&, httplib::Response& res) {
+        lastPing = nowMs();
+        res.set_content("ok", "text/plain");
+    });
+    svr.Get("/api/state", [](const httplib::Request&, httplib::Response& res) {
+        std::lock_guard<std::mutex> lock(gameLock);
+        json(res, stateJson());
+    });
+    svr.Get("/api/new", [](const httplib::Request& req, httplib::Response& res) {
+        std::lock_guard<std::mutex> lock(gameLock);
+        std::string d = req.has_param("difficulty") ? req.get_param_value("difficulty") : "normal";
+        bool tut = req.has_param("mode") && req.get_param_value("mode") == "tutorial";
+        if (!newGame(d, tut)) { res.status = 400; json(res, "{\"error\":\"bad difficulty\"}"); return; }
+        json(res, stateJson());
+    });
+    svr.Get("/api/cmd", [](const httplib::Request& req, httplib::Response& res) {
+        std::lock_guard<std::mutex> lock(gameLock);
+        std::string c = req.has_param("c") ? req.get_param_value("c") : "";
+        std::string in = req.has_param("input") ? req.get_param_value("input") : "";
+        std::string out = game->isRunning() ? runCommand(*game, c, in) : "The case is closed.";
+        json(res, "{\"output\":" + jstr(out) + ",\"state\":" + stateJson() + "}");
+    });
+    // Save / resume. One save slot, a plain text file next to the program.
+    svr.Get("/api/save", [](const httplib::Request&, httplib::Response& res) {
+        std::lock_guard<std::mutex> lock(gameLock);
+        bool ok = game && game->saveGame(savePath);
+        json(res, std::string("{\"ok\":") + jbool(ok) + "}");
+    });
+    svr.Get("/api/hassave", [](const httplib::Request&, httplib::Response& res) {
+        std::lock_guard<std::mutex> lock(gameLock);
+        std::ifstream in(savePath);
+        std::string line, diff, elapsed;
+        while (std::getline(in, line)) {
+            if (line.rfind("difficulty|", 0) == 0) diff = line.substr(11);
+            if (line.rfind("elapsed|", 0) == 0) elapsed = line.substr(8);
+        }
+        bool ok = !diff.empty() && !elapsed.empty();
+        json(res, std::string("{\"exists\":") + jbool(ok) + ",\"difficulty\":" + jstr(diff) + ",\"elapsed\":" + (ok ? elapsed : "0") + "}");
+    });
+    svr.Get("/api/load", [](const httplib::Request&, httplib::Response& res) {
+        std::lock_guard<std::mutex> lock(gameLock);
+        std::unique_ptr<GameManager> g(new GameManager(dataDir));
+        if (!g->loadData() || !g->loadGame(savePath)) { json(res, "{\"error\":\"The saved game could not be loaded.\"}"); return; }
+        game = std::move(g);          // only replaced when the whole save was valid
+        json(res, stateJson());
+    });
+    svr.Get("/api/route", [](const httplib::Request& req, httplib::Response& res) {
+        std::lock_guard<std::mutex> lock(gameLock);
+        int to = req.has_param("to") ? std::atoi(req.get_param_value("to").c_str()) : -1;
+        int minutes = 0;
+        std::vector<int> path = game->planRoute(to, &minutes);
+        std::ostringstream o;
+        o << "{\"minutes\":" << (path.empty() ? 0 : minutes) << ",\"path\":[";
+        for (std::size_t i = 0; i < path.size(); ++i) o << (i ? "," : "") << path[i];
+        o << "]}";
+        json(res, o.str());
+    });
+    // Everything the styled "case file" screen shows. The culprit is only sent once the case is over.
+    svr.Get("/api/casefile", [](const httplib::Request&, httplib::Response& res) {
+        std::lock_guard<std::mutex> lock(gameLock);
+        const GameManager& g = *game; const Map& m = g.getMap();
+        std::ostringstream o;
+        o << "{\"over\":" << jbool(!g.isRunning()) << ",\"outcome\":" << jstr(g.getOutcome())
+          << ",\"title\":" << jstr(g.title()) << ",\"difficulty\":" << jstr(g.difficultyName())
+          << ",\"score\":" << g.score() << ",\"minutesUsed\":" << g.elapsedMinutes() << ",\"minutesTotal\":" << g.minutesTotal()
+          << ",\"hints\":" << g.hintsTaken() << ",\"interrogations\":" << g.interrogations()
+          << ",\"culprit\":" << g.culpritId() << ",\"accused\":" << g.accusedSuspect();
+        o << ",\"timeline\":[";
+        const std::vector<std::pair<std::string, int>>& f = g.foundLog();
+        const std::vector<Clue*>& j = g.getPlayer().getJournal();
+        for (std::size_t i = 0; i < f.size(); ++i) {
+            std::string name, type; int imp = 0;
+            for (const Clue* c : j) if (c->getId() == f[i].first) { name = c->getName(); type = c->getType(); imp = c->getImportance(); }
+            o << (i ? "," : "") << "{\"id\":" << jstr(f[i].first) << ",\"name\":" << jstr(name) << ",\"type\":" << jstr(type)
+              << ",\"importance\":" << imp << ",\"minute\":" << f[i].second << "}";
+        }
+        o << "],\"route\":[";
+        const std::vector<int>& r = g.visited();
+        for (std::size_t i = 0; i < r.size(); ++i) o << (i ? "," : "") << jstr(m.getLocation(r[i]).getName());
+        o << "]}";
+        json(res, o.str());
+    });
+    svr.Get("/api/report", [](const httplib::Request&, httplib::Response& res) {
+        res.set_content(readFile("case_report.txt"), "text/plain; charset=utf-8");
+    });
+    svr.Get("/api/scores", [](const httplib::Request&, httplib::Response& res) {
+        res.set_content(readFile(dataDir + "/scores.txt"), "text/plain; charset=utf-8");
+    });
+
+    int port = 8080;
+    while (port < 8100 && !svr.bind_to_port("127.0.0.1", port)) ++port;
+    if (port >= 8100) {
+        std::cerr << "Could not open a local port (8080-8099 are all busy).\n";
+        return 1;
+    }
+    std::string url = "http://127.0.0.1:" + std::to_string(port);
+    std::cout << "Detective Mystery is running at " << url << "\nPress Ctrl+C in this window to stop it.\n";
+    if (openIt) std::thread([url] { std::this_thread::sleep_for(std::chrono::milliseconds(500)); openBrowser(url); }).detach();
+    // With --auto-close the server stops by itself a while after the game window is closed.
+    if (autoClose)
+        std::thread([&svr] {
+            for (;;) {
+                std::this_thread::sleep_for(std::chrono::seconds(3));
+                long long p = lastPing;
+                if (p != 0 && nowMs() - p > 90000) { svr.stop(); return; }
+            }
+        }).detach();
+    svr.listen_after_bind();
+    return 0;
+}
 
 
