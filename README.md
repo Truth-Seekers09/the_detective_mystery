@@ -1,73 +1,63 @@
-# The Hidden Truth
+# Detective Mystery: The Hidden Truth (Phase 3)
 
-A Detective Mystery Game written in C++ set on our own college campus.
+C++17 detective game using OOP and data structures. Team T152 Truth Seekers. Set on our own campus.
 
-An important document has gone missing. You play the detective: walk around the campus, search for clues, question the people who had a reason to take it and decide who did it. Get it right and you solve the case. Get it wrong twice and the culprit walks free.
+Someone stole the sealed Data Structures paper from the Exam Cell. 12 places, 12 suspects, 33 clues (28 found by searching, 5 created by deduction). The clock runs from 7:00 AM to the 10:00 AM exam and you get **one** accusation.
 
-All characters in the story are fictional. Only the places are real.
+**New here? Start with `SETUP_GUIDE.md`** (Windows, Mac, and what to do if something goes wrong).
 
-## Why we built it
+## Build and play (text version)
+    make            # builds ./hiddentruth
+    make test       # unit tests
+    make playtest   # scripted full-game checks
+    ./hiddentruth data normal      # easy | normal | detective
 
-We made this for our Project-Based Learning course (Data Structures and OOP with C++). Most of what we practice in class lives in small separate programs so we wanted to see what it feels like when everything has to work together in one application.
+## Commands
+| Command | What it does | Concept |
+|---|---|---|
+| look / go N / back | move around | graph, stack |
+| search | search this place (10 min) | linear search |
+| journal / clue ID | collected clues by importance / one clue by id | insertion sort, hash table |
+| route N / fastest N | fewest stops / shortest time | BFS + Queue / Dijkstra |
+| interrogate N | question a suspect here (15 min) | queue |
+| deduce A B | combine two clues | hash table on pairs |
+| find word | keyword search of the journal | string search |
+| hint | nearest unsearched place (15 min, -50 score) | BFS |
+| accuse N | name the culprit, once | encapsulation |
 
-A detective game turned out to be a good fit. Locations are connected, clues pile up, suspects wait to be questioned and sometimes you need to retrace your steps.
-
-## How the game works
-
-1. Read the case and start at one location on the campus.
-2. Walk between connected places and search each one for clues.
-3. Read about the suspects and what each of them says.
-4. Compare what you have found and see who the evidence points to.
-5. Make your accusation.
-
-Some places are locked until you find the right item. You need enough evidence against the right person to win and two wrong accusations end the game.
-
-## Where OOP and DSA come in
-
-We use each concept only where the game needs it. The rest arrive in the final phase as the progress list below shows.
-
-**Data Structures (built in Phase 2)**
-
-| Concept | What it does in the game |
+## Where each concept lives
+| File | Concept |
 |---|---|
-| Graph | Models the campus map and its locked places |
-| Stack | Remembers where you have been so you can go back |
-| Hash table | Finds a clue by its ID quickly |
-| Sorting | Orders your clues by importance |
+| include/Clue.h, src/Clue.cpp | abstract class, inheritance, polymorphism, factory |
+| include/Case.h | encapsulation (private culprit) |
+| include/Stack.h | stack on a linked list |
+| include/Queue.h | queue on a linked list |
+| include/ClueTable.h | hash table with chaining |
+| src/Map.cpp | weighted graph, BFS, Dijkstra |
+| src/Sorting.cpp, src/Score.cpp | insertion sort |
+| include/GameClock.h | exam clock |
+| include/Walker.h, include/Typewriter.h | small unit-tested helpers: walking along waypoints, typewriter text (the browser page does its own walking in JavaScript) |
+| server/web_main.cpp, web/ | local web server and the browser screen (drawing only) |
+| data/*.txt | story, places, suspects, clues, deductions, difficulty |
 
-**Object-Oriented Programming (built in Phase 2)**
 
-| Concept | What it does in the game |
-|---|---|
-| Classes and objects | Players, suspects, locations, clues and the case itself |
-| Encapsulation | Keeps the culprit hidden inside the case so the rest of the game cannot read it |
-| Inheritance | Physical clues, witness statements and documents all build on one clue type |
-| Polymorphism | Each kind of clue is described differently when you examine it |
-| Abstraction | The general clue type defines what every clue must do and each kind fills in the details |
+## Phase 3 front end: browser version
+In Phase 2 we planned an SFML window. For Phase 3 we moved the screen to a browser page served by our own C++ program, because it looks far better and runs on any laptop with only g++. All game rules are still our C++ classes; the page only draws and sends the same text commands the console game uses.
+The recommended way to play is the browser version (see `docs/WEB_SETUP.md`): `make web && ./hiddentruth_web` (Windows: `build_web_windows.bat`).
+Game logic stays in C++; a small C++ web server (`server/web_main.cpp`, cpp-httplib in `third_party/`) serves the HTML/Canvas/JavaScript front end in `web/`.
+The text version remains as a fallback.
 
-**Planned for Phase 3:** Shortest routes between places (BFS), a queue for questioning suspects, searching,ranking and scoring.
+## Phase 3 extras
+- Opening screens: team introduction with a loading bar, a four-page How to play guide, and an animated opening.
+- Tutorial: a small practice case (`data_tutorial/`) played with the same classes, loaded from different data files.
+- Case file: a styled end-of-game report (also saved as `case_report.txt`).
+- Dark mystery music is synthesised in the browser; drop your own `assets/sounds/theme.mp3` to replace it.
+- Windows package: run `package_windows.bat` (see `docs/WEB_SETUP.md`).
+- Back (undo a move with our Stack), Save / Continue (file handling), and a Pause menu with volume.
+- Real photos of all 12 campus places as backdrops (`assets/backgrounds/0.jpg` ... `11.jpg`, taken by the team), with a name plate on each scene. Students and staff who are not suspects walk about in every place (scenery only, they cannot be questioned).
 
-## Our approach
+## Credits
+- Web server: cpp-httplib by Yuji Hirose, MIT licence (`third_party/httplib_LICENSE.txt`).
+- Campus photos: taken by the team at Graphic Era Deemed to be University. Music and sound effects are generated in the browser, nothing is downloaded.
+- All suspects other than the four names the team agreed on are invented. No real staff or students are used.
 
-We are building the investigation logic first and keeping it separate from the graphics. That way the game can be played and tested early and the 2D SFML interface can be added on top without rewriting the game. The story is loaded from files so changing the case does not mean changing the code.
-
-## Team
-
-Team Truth Seekers (T152), Department of Computer Science & Engineering, Graphic Era (Deemed to be University). Our mentor is Prof. Dr. Jyoti Agarwal.
-
-| Team member | Role |
-|---|---|
-| Karan Badhani | Team Lead |
-| Khushi Singal | Team Member |
-| Suraj Giri Goswami | Team Member |
-| Tanmay Arora | Team Member |
-
-## Progress
-
-- [x] Phase 1: Idea, Design and Proposal 
-- [ ] Phase 2: A First Basic working model: campus map, clues, going back, clue lookup, journal and the final accusation
-- [ ] Phase 3 (Final): the Advanced version with shortest routes, questioning suspects, ranking suspects, searching clues, scoring, more places,2D SFML interface and final testing
-
-## Tools
-
-C++, SFML, Visual Studio Code, Git and GitHub.
