@@ -203,5 +203,86 @@ bool GameManager::loadGame(const std::string& path) {
     interrogationCount = talks;
     return true;
 }
+bool GameManager::loadDifficulty() {
+    std::vector<std::string> lines;
+    if (!readLines(dataDir + "/difficulty.txt", lines)) return false;
+    for (const std::string& line : lines) {
+        std::vector<std::string> f = split(line, '|');
+        Difficulty d;
+        if (f.size() != 4 || !toInt(f[1], d.minutes) || !toInt(f[2], d.proofsNeeded) ||
+            !toInt(f[3], d.hintsAllowed) || d.minutes < 1) {
+            std::cerr << "Error: bad line in difficulty.txt: " << line << "\n";
+            return false;
+        }
+        d.name = toLower(f[0]);
+        difficulties.push_back(d);
+    }
+    return !difficulties.empty();
+}
+
+// deductions.txt: "clueA|clueB|resultClueId". Stored in a hash table under the
+// key "smallerId+largerId" so the order the player types them does not matter.
+bool GameManager::loadDeductions() {
+    std::vector<std::string> lines;
+    if (!readLines(dataDir + "/deductions.txt", lines)) return false;
+    for (const std::string& line : lines) {
+        std::vector<std::string> f = split(line, '|');
+        Clue* result = f.size() == 3 ? clueTable.find(f[2]) : nullptr;
+        if (!result || !clueTable.find(f[0]) || !clueTable.find(f[1])) {
+            std::cerr << "Error: bad line in deductions.txt: " << line << "\n";
+            return false;
+        }
+        std::string a = f[0], b = f[1];
+        if (b < a) std::swap(a, b);
+        deductionTable.insert(a + "+" + b, result);
+    }
+    return true;
+}
+
+bool GameManager::loadCase() {
+    std::vector<std::string> lines;
+    if (!readLines(dataDir + "/case.txt", lines) || lines.empty()) return false;
+    std::vector<std::string> f = split(lines[0], '|');
+    int culprit = 0, needed = 0, chances = 1;
+    if ((f.size() != 5 && f.size() != 6) || !toInt(f[2], culprit) || !toInt(f[3], needed) ||
+        (f.size() == 6 && !toInt(f[5], chances)) || chances < 1) {
+        std::cerr << "Error: case.txt is malformed\n";
+        return false;
+    }
+    theCase = Case(f[0], f[1], f[4], culprit, needed, chances);
+    return true;
+}
+
+bool GameManager::loadLocations() {
+    std::vector<std::string> lines;
+    if (!readLines(dataDir + "/locations.txt", lines)) return false;
+    for (const std::string& line : lines) {
+        std::vector<std::string> f = split(line, '|');
+        int id = 0, locked = 0;
+        if (f.size() != 5 || !toInt(f[0], id) || !toInt(f[3], locked) || id != map.size()) {
+            std::cerr << "Error: bad line in locations.txt: " << line << "\n";
+            return false;
+        }
+        map.addLocation(Location(id, f[1], f[2], locked == 1, f[4]));
+    }
+    return map.size() > 0;
+}
+
+bool GameManager::loadConnections() {
+    std::vector<std::string> lines;
+    if (!readLines(dataDir + "/connections.txt", lines)) return false;
+    for (const std::string& line : lines) {
+        std::istringstream in(line);
+        int a = 0, b = 0, mins = 1;
+        if (!(in >> a >> b)) mins = -1;
+        else if (!(in >> mins)) mins = 1;            // minutes are optional
+        if (mins < 1 || !map.addEdge(a, b, mins)) {
+            std::cerr << "Error: bad line in connections.txt: " << line << "\n";
+            return false;
+        }
+    }
+    return true;
+}
+
 
 
