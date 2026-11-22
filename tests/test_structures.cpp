@@ -8,6 +8,13 @@
 #include "ClueTable.h"
 #include "Map.h"
 #include "Player.h"
+#include "ConsoleCapture.h"
+#include "GameClock.h"
+#include "Typewriter.h"
+#include "Walker.h"
+#include "Queue.h"
+#include "Score.h"
+#include <cstdio>
 #include "Sorting.h"
 #include "Stack.h"
 
@@ -76,12 +83,3 @@ static void testPlayer() {
     std::cout << "Player + history stack: OK\n";
 }
 
-int main() {
-    testStack();
-    testHashTable();
-    testGraph();
-    testSorting();
-    testPlayer();
-    std::cout << "All tests passed.\n";
-    return 0;
-}
