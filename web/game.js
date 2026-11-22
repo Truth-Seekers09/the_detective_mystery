@@ -240,3 +240,134 @@ async function autoRoute(to){
   for (let i = 1; i < r.path.length; i++){ const ok = await travel(r.path[i]); if (!ok) break; }
 }
 
+// ------------------------------------------------------------ journal / suspects / accuse
+function renderJournal(){
+  const S = G.S, box = $('cards'); box.innerHTML = ''; G.selected = [];
+  if (!S.journal.length) box.innerHTML = '<div class="empty">Your board is empty. Search places and question people to pin evidence here.</div>';
+  S.journal.forEach((c,i) => {
+    const d = document.createElement('div'); d.className = 'card' + (c.id[0]==='D' ? ' ded' : ''); d.dataset.id = c.id; d.style.animationDelay = (i*40) + 'ms';
+    d.innerHTML = `<span class="id">${c.id}</span><div class="t">${c.id[0]==='D' ? 'Deduction' : esc(c.type)}</div><h4>${esc(c.name)}</h4><div>${esc(c.description)}</div>`;
+    d.onclick = () => { Sfx.click(); const k = G.selected.indexOf(c.id); if (k >= 0) G.selected.splice(k,1); else { if (G.selected.length === 2) G.selected.shift(); G.selected.push(c.id); } syncSelection(); };
+    box.appendChild(d);
+  });
+  syncSelection();
+}
+function syncSelection(){
+  document.querySelectorAll('#cards .card').forEach(c => c.classList.toggle('sel', G.selected.includes(c.dataset.id)));
+  $('bDeduce').disabled = G.selected.length !== 2 || G.busy;
+  const svg = $('strings'); svg.innerHTML = '';
+  if (G.selected.length === 2){
+    const b = $('board').getBoundingClientRect(), [x,y] = G.selected.map(id => { const r = document.querySelector(`#cards .card[data-id="${id}"]`).getBoundingClientRect(); return [r.left - b.left + r.width/2, r.top - b.top + 2]; }).reduce((a,c)=>[[...a[0],c[0]],[...a[1],c[1]]],[[],[]]);
+    svg.innerHTML = `<path d="M${x[0]},${y[0]} Q${(x[0]+x[1])/2},${Math.max(y[0],y[1])+70} ${x[1]},${y[1]}" stroke="#ff4b44" stroke-width="3" fill="none" stroke-dasharray="1 0"/><circle cx="${x[0]}" cy="${y[0]}" r="5" fill="#ff4b44"/><circle cx="${x[1]}" cy="${y[1]}" r="5" fill="#ff4b44"/>`;
+    $('deduceHint').textContent = 'Ready: ' + G.selected.join(' + ');
+  } else $('deduceHint').textContent = 'Pick two clue cards.';
+}
+async function doDeduce(){
+  if (G.selected.length !== 2 || G.busy) return; const [a,b] = G.selected;
+  const out = await cmd(`deduce ${a} ${b}`); updateHUD();
+  if (/click together/i.test(out)){ Intro.tutEvent('deduced'); Sfx.deduce(); toast('🧩 <b>New deduction!</b><small>Check the gold card</small>'); }
+  else { Sfx.close(); toast(esc(out.trim().split('\n')[0]), 'info'); }
+  addLog('Deduce ' + a + ' + ' + b, out.trim()); renderJournal(); await afterCommand();
+}
+function renderSuspects(){
+  const S = G.S, grid = $('sgrid'); grid.innerHTML = '';
+  S.suspects.forEach(s => {
+    const here = s.location === S.location, d = document.createElement('div'); d.className = 'sus';
+    d.innerHTML = `<div class="top">${portraitSVG(s.id)}<div><h4>${esc(s.name)}</h4><div class="role">${esc(s.role)}</div><div class="where">📍 ${esc(S.locations[s.location].name)}${here ? ' · here now' : ''}</div></div></div>
+      <dl><dt>Motive</dt><dd>${esc(s.motive)}</dd><dt>Their alibi</dt><dd>${esc(s.alibi)}</dd><dt>First statement</dt><dd>${esc(s.statement)}</dd></dl>
+      <div class="row"><button class="btn" data-a="go">${here ? 'Talk now' : 'Take me there'}</button><button class="btn danger" data-a="acc">Accuse</button></div>`;
+    d.querySelector('[data-a=go]').onclick = () => { closeModals(); if (here) { const n = G.npcs.find(n => n.id === s.id); if (n) doInterrogate(n); } else autoRoute(s.location); };
+    d.querySelector('[data-a=acc]').onclick = () => { openModal('accuse'); pickAccuse(s.id); };
+    grid.appendChild(d);
+  });
+}
+let accuseId = null;
+function renderAccuse(){
+  const S = G.S; accuseId = null;
+  $('accuseText').innerHTML = `<p>Name the person who took the paper. You hold <b>${S.journal.length} clues</b>, and the case needs <b>${S.proofsNeeded}</b> pieces of solid proof against the right person. A wrong name — or the right name without enough proof — ends the investigation.</p>
+   <div id="accGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin:14px 0"></div><p id="accPick" style="color:var(--muted)">Choose a suspect.</p>`;
+  S.suspects.forEach(s => {
+    const b = document.createElement('button'); b.className = 'btn'; b.dataset.id = s.id; b.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 6px;font-size:12px';
+    b.innerHTML = `<span style="width:56px;height:56px;display:block;border-radius:12px;overflow:hidden">${portraitSVG(s.id)}</span>${esc(s.name)}`; b.onclick = () => pickAccuse(s.id); $('accGrid').appendChild(b);
+  });
+  $('accuseGo').disabled = true;
+}
+function pickAccuse(id){
+  accuseId = id; Sfx.click(); document.querySelectorAll('#accGrid .btn').forEach(b => { b.style.outline = (+b.dataset.id === id) ? '2px solid var(--red)' : 'none'; });
+  $('accPick').innerHTML = `You are about to accuse <b>${esc(G.S.suspects[id].name)}</b>. There is no undo.`; $('accuseGo').disabled = false;
+}
+async function doAccuse(){
+  if (accuseId == null || G.busy) return; const id = accuseId; closeModals(); G.busy = true;
+  Sfx.lock(); const out = await cmd('accuse ' + id, 'YES\n' + G.name + '\n'); addLog('Accusation', out.trim()); Intro.tutEvent('accused');
+  G.busy = false; updateHUD(); G.lastOut = out; await endGame();
+}
+
+// ------------------------------------------------------------ log / map
+function renderLog(){ $('logBody').innerHTML = G.log.length ? G.log.map(l => `<div class="lg"><span class="c">${esc(l.c)}</span>${esc(l.text)}</div>`).join('') : '<div class="empty">Nothing yet.</div>'; $('logBody').scrollTop = 1e6; }
+const mapEl = $('map'), mctx = mapEl.getContext('2d');
+function drawMap(){
+  const S = G.S; if (!S) return; const dpr = Math.min(devicePixelRatio||1, 2), w = Math.floor(mapEl.clientWidth * dpr);
+  if (!w) return; if (mapEl.width !== w){ mapEl.width = w; mapEl.height = Math.floor(w*440/560); }
+  const W = mapEl.width, H = mapEl.height, c = mctx; c.setTransform(1,0,0,1,0,0); c.clearRect(0,0,W,H);
+  const g = c.createLinearGradient(0,0,0,H); g.addColorStop(0,'#142238'); g.addColorStop(1,'#0c1424'); c.fillStyle = g; c.beginPath(); c.roundRect ? c.roundRect(0,0,W,H,14*dpr) : c.rect(0,0,W,H); c.fill();
+  c.strokeStyle = 'rgba(255,255,255,.05)'; c.lineWidth = 1; for (let x = 0; x < W; x += 28*dpr){ c.beginPath(); c.moveTo(x,0); c.lineTo(x,H); c.stroke(); } for (let y = 0; y < H; y += 28*dpr){ c.beginPath(); c.moveTo(0,y); c.lineTo(W,y); c.stroke(); }
+  const P = id => [mpos(id)[0]*(W-70*dpr)+35*dpr, mpos(id)[1]*(H-62*dpr)+26*dpr], t = G.t, cur = S.location;
+  c.font = `${600*1} ${10*dpr}px "Segoe UI",system-ui,sans-serif`; c.textAlign = 'center';
+  const route = G.hoverRoute || [], onRoute = (a,b) => { const i = route.indexOf(a); return i >= 0 && (route[i+1] === b || route[i-1] === b); };
+  for (const [a,b,m] of S.edges){
+    const A = P(a), B = P(b), hl = onRoute(a,b), far = m >= 8;
+    c.strokeStyle = hl ? '#ffd36b' : 'rgba(150,180,220,.35)'; c.lineWidth = (hl ? 4 : 2.2) * dpr; c.setLineDash(far ? [6*dpr,5*dpr] : []); c.beginPath(); c.moveTo(A[0],A[1]); c.lineTo(B[0],B[1]); c.stroke(); c.setLineDash([]);
+    const mx = (A[0]+B[0])/2, my = (A[1]+B[1])/2; c.fillStyle = hl ? '#ffd36b' : 'rgba(12,20,36,.9)'; c.beginPath(); c.arc(mx,my,8*dpr,0,6.283); c.fill();
+    c.fillStyle = hl ? '#2a1c04' : '#9fb4d8'; c.textBaseline = 'middle'; c.fillText(m, mx, my+.5*dpr);
+  }
+  for (const L of S.locations){
+    const [x,y] = P(L.id), isCur = L.id === cur, hov = G.hover === L.id, r = (isCur ? 13 : 10) * dpr;
+    if (isCur){ const pu = (Math.sin(t*3)+1)/2; c.fillStyle = `rgba(255,211,107,${.12+.18*pu})`; c.beginPath(); c.arc(x,y,r+8*dpr+pu*7*dpr,0,6.283); c.fill(); }
+    c.fillStyle = L.locked ? '#4a2326' : isCur ? '#ffd36b' : hov ? '#9fe8ff' : '#2b4a74'; c.strokeStyle = L.locked ? '#ff6b64' : isCur ? '#fff2c0' : 'rgba(180,210,255,.6)'; c.lineWidth = 2*dpr;
+    c.beginPath(); c.arc(x,y,r,0,6.283); c.fill(); c.stroke();
+    c.textBaseline = 'middle'; c.font = `${12*dpr}px sans-serif`; c.fillStyle = '#fff';
+    if (L.locked) c.fillText('🔒', x, y+1*dpr); else if (L.searched && !isCur){ c.fillStyle = '#6be6a0'; c.fillText('✓', x, y+1*dpr); } else if (isCur){ c.fillStyle = '#2a1c04'; c.fillText('★', x, y+1*dpr); }
+    c.font = `600 ${10*dpr}px "Segoe UI",system-ui,sans-serif`; c.textBaseline = 'alphabetic'; c.fillStyle = isCur ? '#ffe9a8' : '#cfe0ff'; c.fillText(sname(L.id), x, y + r + 12*dpr);
+  }
+}
+function mapHit(e){
+  const S = G.S; if (!S) return null; const r = mapEl.getBoundingClientRect(), fx = (e.clientX - r.left) / r.width, fy = (e.clientY - r.top) / r.height, W = mapEl.width/ (Math.min(devicePixelRatio||1,2)), H = W*440/560;
+  let best = null, bd = 1e9; for (const L of S.locations){ const px = (mpos(L.id)[0]*(W-70)+35)/W, py = (mpos(L.id)[1]*(H-62)+26)/H, d = Math.hypot((fx-px)*W, (fy-py)*H); if (d < 24 && d < bd){ bd = d; best = L.id; } } return best;
+}
+mapEl.addEventListener('mousemove', async e => {
+  const id = mapHit(e); G.hover = id; mapEl.style.cursor = id != null && id !== G.S?.location ? 'pointer' : 'default';
+  if (id == null || id === G.S.location){ G.hoverRoute = null; $('mapTip').textContent = ''; return; }
+  const k = G.S.location + '>' + id + '#' + G.S.locations.map(l => l.locked ? 1 : 0).join('');
+  if (!G.routeCache[k]) G.routeCache[k] = await api('/api/route?to=' + id);
+  if (G.hover !== id) return; const r = G.routeCache[k]; G.hoverRoute = r.path;
+  $('mapTip').textContent = r.path.length ? `${sname(id)}: ${r.minutes} min · click to travel` : `${sname(id)}: no open route (locked?)`;
+});
+mapEl.addEventListener('mouseleave', () => { G.hover = null; G.hoverRoute = null; $('mapTip').textContent = ''; });
+mapEl.addEventListener('click', e => { const id = mapHit(e); if (id != null && !G.modal && !G.dlg) { Sfx.click(); autoRoute(id); } });
+
+// ------------------------------------------------------------ end of game
+async function endGame(){
+  const S = G.S; G.busy = true; let out = G.lastOut || ''; G.lastOut = '';
+  if (!out) out = S.outcome === 'lost_time' ? 'The clock strikes 10:00. The exam begins, and the paper is already out. The thief walks free.' : '';
+  out = out.split('\n').filter(l => !/^You are about to accuse|^Type YES|Detective name|^High scores|^\s+\d+\.\s/.test(l)).join('\n').replace(/\n{3,}/g,'\n\n');
+  const win = S.outcome === 'solved', prac = S.tutorial; await sleep(500);
+  if (G.dlg) advanceDialog();
+  closeModals();
+  // celebration (or a sombre close) before the result screen
+  $('tcSmall').textContent = win ? 'Congratulations, Detective' : S.outcome === 'lost_time' ? 'Time is up' : 'The culprit walks free';
+  $('tcBig').textContent = prac ? (win ? 'Practice complete' : 'Practice over') : (win ? 'Case solved' : 'Case closed');
+  $('tcSub').textContent = win ? 'The truth was hidden. Not anymore.' : 'Some truths stay hidden a little longer.';
+  $('cine').classList.add('on', 'title'); win ? (Sfx.fanfare(), Intro.fxStart('win', 9)) : (Sfx.lose(), Intro.fxStart('lose', 8));
+  await sleep(win ? 3200 : 2600); $('cine').classList.remove('title', 'on');
+  $('verdict').textContent = $('tcBig').textContent; $('verdict').className = 'verdict ' + (win ? 'win' : 'lose');
+  $('scoreline').innerHTML = prac ? '' : `<div><b>${S.score}</b><span>score</span></div><div><b>${S.moves}</b><span>moves</span></div><div><b>${S.journal.length}</b><span>clues</span></div><div><b>${S.minutesTotal - S.minutesLeft}</b><span>minutes used</span></div>`;
+  $('endText').textContent = out.trim();
+  $('fileBtn').classList.toggle('hidden', prac); $('realBtn').classList.toggle('hidden', !prac); $('againBtn').firstChild.textContent = prac ? 'Back to menu ' : 'Play again ';
+  $('scoresTbl').innerHTML = '';
+  if (!prac) try {
+    const txt = await (await fetch('/api/scores')).text(), rows = txt.split('\n').filter(l => l.trim() && l[0] !== '#').slice(0,5);
+    $('scoresTbl').innerHTML = rows.length ? '<tr><td colspan="2" style="color:var(--muted);font-size:10px;letter-spacing:2px;text-transform:uppercase">High scores</td></tr>' + rows.map(l => { const p = l.split('|'); return `<tr><td>${esc(p[0])}</td><td>${esc(p[1] || '')}</td></tr>`; }).join('') : '';
+  } catch(e){}
+  $('end').classList.add('open');
+}
+
