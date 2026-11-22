@@ -1,0 +1,3 @@
+# id|name|role|motive|alibi|statement|locationId
+0|Mr. Desai|Office clerk, BTECH Block|He is responsible for the register and would be blamed if it vanished.|Says he locked the office at 5 PM.|"I locked up at five. The register was in the drawer when I left."|0
+1|Riya Sen|Lab technician, CSIT Block|She had been marked absent on too many days.|Says she went home at 4 PM.|"I left at four. I never went near the BTECH office."|1

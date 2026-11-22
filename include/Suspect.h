@@ -11,13 +11,14 @@ private:
     std::string motive;
     std::string alibi;
     std::string statement;
+    int locationId;           // where the suspect can be questioned
 
 public:
     Suspect(int id, const std::string& name, const std::string& role,
             const std::string& motive, const std::string& alibi,
-            const std::string& statement)
+            const std::string& statement, int locationId)
         : id(id), name(name), role(role), motive(motive), alibi(alibi),
-          statement(statement) {}
+          statement(statement), locationId(locationId) {}
 
     int getId() const { return id; }
     const std::string& getName() const { return name; }
@@ -25,6 +26,7 @@ public:
     const std::string& getMotive() const { return motive; }
     const std::string& getAlibi() const { return alibi; }
     const std::string& getStatement() const { return statement; }
+    int getLocationId() const { return locationId; }
 };
 
 #endif

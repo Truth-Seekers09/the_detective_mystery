@@ -1,4 +1,13 @@
-# id|name|role|motive|alibi|statement
-0|Anand Verma|Lab Assistant, CSIT Block|He is deep in personal debt.|Says he left college at 6:30 PM and went straight home.|"I left at half past six and went home. I haven't been near the Exam Cell in weeks."
-1|Neha Kapoor|Final-year student|She has a backlog in this subject and is afraid of failing again.|Says she studied at Ravi Canteen until it closed at 10:30 PM.|"Yes, I'm worried about this paper but I was at the canteen with my notes all evening."
-2|Ms. Seema Joshi|Library assistant|She stayed back late alone with a large bag.|Says she was listing returned books until 10 PM.|"I stayed late to list the returned books. The bag is full of library books."
+# id|name|role|motive|alibi|statement|locationId
+0|Anand Verma|Lab Assistant, CSIT Block|He is deep in personal debt.|Says he left college at 6:30 PM and went straight home.|"I left at half past six and went home. I haven't been near the Exam Cell in weeks."|1
+1|Neha Kapoor|Final-year student|She has a backlog in this subject and is afraid of failing again.|Says she studied at Ravi Canteen until it closed at 10:30 PM.|"Yes, I'm worried about this paper. But I was at the canteen with my notes all evening."|3
+2|Ms. Seema Joshi|Library assistant|She stayed back late, alone, with a large bag.|Says she was cataloguing returned books until 10 PM.|"I stayed late to catalogue the returned books. The bag is full of library books."|5
+3|Mr. Rawat|Security guard, Gate 1|He was on night duty and has a spare set of keys for the gate cabin.|Says he stayed at his post all night.|"I never left the gate. Ask anyone who came through."|10
+4|Rohit Malhotra|Third-year student|He has failed this subject twice and was seen asking around about the paper.|Says he was at Quick Bite Cafe, then went to his hostel.|"Everyone asks everyone about papers before exams. That doesn't make me a thief."|4
+5|Dr. Vikram Sethi|Exam Cell in-charge|He holds the main key to the Exam Cell and had a public argument about the paper.|Says he locked up at 9:15 PM and left.|"I locked that door myself and handed the key back. I have nothing to hide."|0
+6|Pooja Nair|Part-time staff, Happiness Cafe|She was working a double shift and is friends with several students.|Says she was at the cafe counter until 8 AM.|"I make coffee. I see a hundred faces a night, and I remember most of them."|7
+7|Sandeep Yadav|Event contractor, fest crew|He had keys to the convention centre and a reason to be on campus late.|Says he was packing up the fest stage until 1 AM.|"My crew and I were clearing the stage. The hall was a mess."|9
+8|Prof. Meera Iyer|Faculty, CSIT Block|She set the paper, and knew exactly what was in it.|Says she sealed the paper herself at 8:30 PM and went home.|"I sealed it and signed the envelope. After that it was not in my hands."|1
+9|Kabir Sharma|Student Council secretary|He organised the fest and had a pass to every building.|Says he was on volunteer duty at the convention centre until 1 AM.|"I ran the fest. I barely sat down all night."|2
+10|Isha Bansal|Civil Engineering student, topper|She is the top student in her branch and was seen near the CSIT Block that evening.|Says she studied in the Civil Block and then went to her hostel.|"I study at the Civil Block every night. I don't need anyone's paper."|8
+11|Mr. Chauhan|Security guard, Gate 2|He keeps the Gate 2 register and sometimes lets staff out after hours.|Says he opened Gate 2 only at 6 AM.|"Gate 2 is quiet. Almost everyone uses Gate 1."|11

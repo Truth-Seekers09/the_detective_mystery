@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Detective Mystery: The Hidden Truth</title>
+<link rel="icon" type="image/png" href="icon.png"><meta name="theme-color" content="#0b0e18">
+<link rel="stylesheet" href="style.css">
+</head><body>
+<canvas id="stage"></canvas>
+<div id="vignette"></div>
+
+<!-- HUD -->
+<div id="hud" class="hidden">
+  <div class="glass pill" id="locPill"><div class="dot"></div><div><b id="locName">—</b><small id="locSub"></small></div></div>
+  <div class="glass pill" id="clockPill">
+    <span id="clockTime">07:00</span>
+    <div id="sunbar"><div id="sunfill"></div><i id="sun"></i></div>
+    <span id="leftTxt">180 min</span>
+  </div>
+  <div class="glass pill" id="statsPill">
+    <div class="st"><b id="sMoves">0</b><span>moves</span></div>
+    <div class="st"><b id="sClues">0</b><span>clues</span></div>
+    <div class="st"><b id="sProof">0</b><span>proofs</span></div>
+    <div class="st"><b id="sHints">0</b><span>hints</span></div>
+    <button class="icon" id="muteBtn" title="Sound (M)">🔊</button>
+    <button class="icon" id="logBtn" title="Case log (L)">📜</button>
+    <button class="icon" id="pauseBtn" title="Pause (Esc)">⏸</button>
+  </div>
+</div>
+
+<div id="dock" class="glass hidden">
+  <button class="dk" id="bSearch"><i>🔍</i><span>Search</span><kbd>F</kbd></button>
+  <button class="dk" id="bJournal"><i>📌</i><span>Evidence</span><kbd>J</kbd></button>
+  <button class="dk" id="bSuspects"><i>🕵️</i><span>Suspects</span><kbd>U</kbd></button>
+  <button class="dk" id="bBack"><i>↩️</i><span>Back</span><kbd>B</kbd></button>
+  <button class="dk" id="bHint"><i>💡</i><span>Hint</span><kbd>H</kbd></button>
+  <button class="dk hot" id="bAccuse"><i>⚖️</i><span>Accuse</span></button>
+</div>
+
+<div id="miniWrap" class="glass hidden"><canvas id="map" width="560" height="440"></canvas><div id="mapTip"></div></div>
+<div id="keys" class="hidden"><span><kbd>A</kbd><kbd>D</kbd> / <kbd>←</kbd><kbd>→</kbd> walk</span><span><kbd>W</kbd><kbd>S</kbd> depth</span><span><kbd>Shift</kbd> run</span><span><kbd>E</kbd> interact</span><span><kbd>B</kbd> back</span><span><kbd>M</kbd> map</span><span><kbd>Esc</kbd> pause</span></div>
+
+<!-- dialogue -->
+<div id="dlg" class="glass hidden"><div id="dlgFace"></div><div id="dlgMain"><div id="dlgName"></div><div id="dlgText"></div><div id="dlgNext">press <kbd>Space</kbd> to continue</div></div></div>
+
+<div id="toasts"></div>
+<div id="cine"><div class="bar top"></div><div class="bar bot"></div><div id="titleCard"><small id="tcSmall"></small><h1 id="tcBig"></h1><p id="tcSub"></p></div></div>
+<div id="fade"></div>
+
+<!-- splash: team introduction + loading -->
+<div class="overlay open" id="splash"><div class="splashBox">
+  <div class="eyebrow">Graphic Era Deemed to be University · Dehradun</div>
+  <h1 class="sTitle">Detective Mystery</h1>
+  <div class="sSub">The Hidden Truth</div>
+  <div class="sMeta">PBL Project · Data Structures &amp; Programming in C++ · Team ID DSCPP-III-2026-T152 · 3rd Semester · Section DS2, F, J, K · Session 2026–27</div>
+  <div class="team">
+    <div class="mem lead"><b>Karan Badhani</b><i>2510360037 · Team Lead</i><span>Game flow, clock, accusation rule, hash table, web server</span></div>
+    <div class="mem"><b>Khushi Singal</b><i>2510360039</i><span>Campus map, 12 places and routes, locked places, game clock</span></div>
+    <div class="mem"><b>Suraj Giri Goswami</b><i>2510012585</i><span>Stack, Queue, player history, BFS and Dijkstra routes</span></div>
+    <div class="mem"><b>Tanmay Arora</b><i>2510610178</i><span>Story, suspects, clues, scoring and high-score sorting</span></div>
+  </div>
+  <div class="mentor">Mentor · <b>Prof. Dr. Jyoti Agarwal</b></div>
+  <div class="loadBox"><div class="loadBar"><i id="loadFill"></i></div><div id="loadTxt">Loading…</div></div>
+  <div id="pressKey">Press any key to continue</div>
+</div></div>
+<!-- menu -->
+<div class="overlay" id="menu"><div class="hero">
+  <div class="eyebrow">Graphic Era · Team Truth Seekers · T152</div>
+  <h1>The <em>Hidden</em> Truth</h1>
+  <p class="lead">The sealed question paper has vanished from the Exam Cell. Twelve suspects, thirty-three clues, <b>one</b> accusation. Walk the campus and name the thief before the exam begins.</p>
+  <div class="namebox"><input id="nameIn" maxlength="18" placeholder="Your detective name" value="Detective"></div>
+  <div class="diff" id="diffs">
+    <button data-d="easy"><b>Easy</b><span>240 min · 4 proofs · 10 hints</span></button>
+    <button data-d="normal" class="on"><b>Normal</b><span>180 min · 6 proofs · 3 hints</span></button>
+    <button data-d="detective"><b>Detective</b><span>120 min · 7 proofs · no hints</span></button>
+  </div>
+  <button class="cta" id="startBtn">Begin the investigation <span>→</span></button>
+  <button class="btn hidden" id="resumeBtn" style="margin-top:12px"></button>
+  <div class="menuRow"><button class="btn" id="tutBtn">🎓 Tutorial</button><button class="btn" id="guideBtn">📖 How to play</button><button class="btn" id="teamBtn">👥 Team</button></div>
+</div></div>
+
+<!-- guide -->
+<div class="overlay" id="guide"><div class="modal" style="max-width:760px">
+  <header><div><h2 id="gTitle"></h2><p id="gStep"></p></div><button class="x" data-close>✕</button></header>
+  <div class="body"><div id="gBody"></div></div>
+  <footer class="gfoot"><button class="btn" id="gBack">Back</button><div id="gDots"></div><button class="btn primary" id="gNext">Next</button></footer>
+</div></div>
+
+<!-- opening animation -->
+<div id="opening"><canvas id="openCv"></canvas><div id="skipHint">Press Space to skip</div></div>
+<canvas id="fx"></canvas>
+<div id="tut" class="glass hidden"><div id="tutHead"></div><div id="tutText"></div><div id="tutBar"><i></i></div></div>
+
+<div class="overlay" id="journal"><div class="modal">
+  <header><div><h2>Evidence board</h2><p>Select two cards, then combine them to deduce something new.</p></div><button class="x" data-close>✕</button></header>
+  <div class="body"><div id="board"><svg id="strings"></svg><div id="cards"></div></div>
+    <div class="toolbar"><button class="btn primary" id="bDeduce" disabled>🧩 Combine selected (5 min)</button><span class="hintline" id="deduceHint">Pick two clue cards.</span></div></div>
+</div></div>
+
+<div class="overlay" id="suspects"><div class="modal">
+  <header><div><h2>Suspects</h2><p>Statements are what they claim — not the truth. Find them around campus to interrogate.</p></div><button class="x" data-close>✕</button></header>
+  <div class="body"><div id="sgrid"></div></div>
+</div></div>
+
+<div class="overlay" id="accuse"><div class="modal" style="max-width:640px">
+  <header><div><h2>The accusation</h2><p>You have exactly one.</p></div><button class="x" data-close>✕</button></header>
+  <div class="body"><div class="confirmText" id="accuseText"></div>
+    <div class="toolbar"><button class="btn danger" id="accuseGo">I am sure — accuse</button><button class="btn" data-close>Keep investigating</button></div></div>
+</div></div>
+
+<div class="overlay" id="pause"><div class="modal" style="max-width:420px">
+  <header><div><h2>Paused</h2><p>The exam clock only moves when you do.</p></div><button class="x" data-close>✕</button></header>
+  <div class="body pauseBody">
+    <button class="btn primary" id="pResume">Resume</button>
+    <button class="btn" id="pSave">💾 Save game</button>
+    <button class="btn" id="pGuide">📖 How to play</button>
+    <div class="vol"><button class="btn" id="pMute">🔊 Sound on</button><input type="range" id="pVol" min="0" max="100" value="50" aria-label="Volume"></div>
+    <button class="btn danger" id="pQuit">Quit to menu</button>
+  </div>
+</div></div>
+
+<div class="overlay" id="logDrawer"><div class="modal" style="max-width:720px">
+  <header><div><h2>Case log</h2><p>Everything said and found so far.</p></div><button class="x" data-close>✕</button></header>
+  <div class="body" id="logBody"></div>
+</div></div>
+
+<div class="overlay" id="end"><div class="hero">
+  <h2 class="verdict" id="verdict"></h2>
+  <div class="scoreline" id="scoreline"></div>
+  <div class="endtext" id="endText"></div>
+  <table class="scores" id="scoresTbl"></table>
+  <div class="endBtns"><button class="cta" id="againBtn">Play again <span>↻</span></button>
+  <button class="btn" id="fileBtn">📁 View case file</button><button class="btn primary hidden" id="realBtn">Start the real case →</button></div>
+</div></div>
+<div class="overlay" id="casefile"><div class="file" id="fileSheet"></div></div>
+<script src="art.js"></script>
+<script src="scene.js"></script>
+<script src="intro.js"></script>
+<script src="game.js"></script>
+</body></html>
+

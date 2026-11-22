@@ -1,0 +1,2 @@
+# name|minutesAvailable|proofsNeeded|hintsAllowed
+normal|120|2|3

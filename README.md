@@ -1,3 +1,22 @@
+# Assets
+
+Put the real campus photos in `assets/backgrounds/` and name each file after the location number:
+
+| File | Place |
+|---|---|
+| 0.jpg | BTECH Block |
+| 1.jpg | CSIT Block |
+| 2.jpg | Petroleum Block |
+| 3.jpg | Ravi Canteen |
+| 4.jpg | Quick Bite Cafe |
+| 5.jpg | Library |
+| 6.jpg | Exam Cell (CSIT basement) |
+| 7.jpg | Happiness Cafe |
+| 8.jpg | Civil Block |
+| 9.jpg | Silver Jubilee Convention Centre |
+| 10.jpg | Gate 1 |
+| 11.jpg | Gate 2 |
+
 # Detective Mystery: The Hidden Truth (Phase 3)
 
 C++17 detective game using OOP and data structures. Team T152 Truth Seekers. Set on our own campus.
@@ -43,7 +62,7 @@ Someone stole the sealed Data Structures paper from the Exam Cell. 12 places, 12
 
 ## Phase 3 front end: browser version
 In Phase 2 we planned an SFML window. For Phase 3 we moved the screen to a browser page served by our own C++ program, because it looks far better and runs on any laptop with only g++. All game rules are still our C++ classes; the page only draws and sends the same text commands the console game uses.
-The recommended way to play is the browser version (see `docs/WEB_SETUP.md`): `make web && ./hiddentruth_web` (Windows: `build_web_windows.bat`).
+The recommended way to play is the browser version.
 Game logic stays in C++; a small C++ web server (`server/web_main.cpp`, cpp-httplib in `third_party/`) serves the HTML/Canvas/JavaScript front end in `web/`.
 The text version remains as a fallback.
 

@@ -1,0 +1,6 @@
+# id|type(PHYSICAL/TESTIMONY/DOCUMENT)|name|description|locationId|suspectId(-1 none)|incriminating(0/1)|importance(1-5)
+C01|DOCUMENT|Practice Pass|A pass that lets you enter the Petroleum Block. Clues like this open locked places.|0|-1|0|2
+C04|TESTIMONY|Clerk's Statement|Mr. Desai says the office window was left open and he saw a lab coat near the stairs.|0|0|0|2
+C02|DOCUMENT|Torn Register Page|A page torn from the attendance register, found in the lab bin. It still shows Riya Sen's absences.|1|1|1|3
+C03|PHYSICAL|Chalk-dusted Glove|A glove with the same chalk dust as the lab. It was dropped in the Petroleum Block.|2|1|1|3
+D01|DOCUMENT|Handwriting Match|The torn page and the glove both link back to the lab: the person you are looking for works there.|-1|1|1|4

@@ -1,0 +1,2 @@
+# title|crime|culpritId|requiredEvidence|intro|chances
+Practice Case: The Missing Register|took the lab attendance register from the BTECH Block office|1|2|This is a small practice case. A lab attendance register has vanished from the BTECH Block office. There are 3 places, 2 suspects and a handful of clues. Learn to walk, search, question people, combine clues and make your one accusation. Nothing here is saved to the high-score table.|1
