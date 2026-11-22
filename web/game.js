@@ -130,3 +130,113 @@ function refreshFlags(){
   for (const n of G.npcs){ const s = S.suspects[n.id]; if (s.location !== S.location) n.gone = true; }
 }
 
+// ------------------------------------------------------------ movement
+function walkTo(x){
+  return new Promise(res => { x = clamp(x, 70, Scene.W-70); if (Math.abs(G.player.x - x) < 14) { res(); return; } G.auto = {x, res}; });
+}
+function update(dt){
+  const P = G.player; updateCrowd(dt);
+  if (G.mode === 'menu'){
+    P.x = 1300 + Math.sin(G.t*.25)*260; P.dir = Math.cos(G.t*.25) > 0 ? 1 : -1; P.spd = .55; P.phase += dt*8; P.y = 640;
+    G.camX = 900 + Math.sin(G.t*.12)*240; G.tod = .05 + (Math.sin(G.t*.05)+1)*.04; return;
+  }
+  const locked = G.busy || G.dlg || G.modal;
+  let dx = 0, dy = 0, run = false;
+  if (!locked && !G.auto){
+    const K = G.keys; dx = (K.ArrowRight||K.d?1:0) - (K.ArrowLeft||K.a?1:0); dy = (K.ArrowDown||K.s?1:0) - (K.ArrowUp||K.w?1:0); run = K.Shift;
+  } else if (G.auto && !G.dlg && !G.modal){
+    const d = G.auto.x - P.x; if (Math.abs(d) < 10){ const r = G.auto.res; G.auto = null; r(); } else dx = Math.sign(d); run = Math.abs(d) > 500;
+  }
+  if (G.auto && (G.keys.ArrowLeft||G.keys.ArrowRight||G.keys.a||G.keys.d) && !G.busy){ const r = G.auto.res; G.auto = null; r(); }
+  const sp = run ? RUN : SPEED;
+  if (dx){ P.x = clamp(P.x + dx*sp*dt, 60, Scene.W-60); P.dir = dx; G.walked = (G.walked||0) + sp*dt; if (G.walked > 160) Intro.tutEvent('moved'); }
+  if (dy){ P.y = clamp(P.y + dy*130*dt, LANE_MIN, LANE_MAX); }
+  const moving = dx || dy;
+  P.spd += ((moving ? (run ? 1 : .8) : 0) - P.spd) * Math.min(1, dt*12);
+  if (P.spd > .02){ P.phase += dt * (run ? 13 : 9.5) * (dx||dy ? 1 : 0.5); const step = Math.floor(P.phase/Math.PI); if (step !== G.lastStepPhase){ G.lastStepPhase = step; if (P.spd > .3) Sfx.step(); } }
+  // npcs turn towards the detective
+  for (const n of G.npcs){ n.dir = P.x < n.x ? -1 : 1; n.act = (G.talkId === n.id) ? 'talk' : null; }
+  // camera
+  const vw = Scene.viewW(), target = clamp(P.x - vw/2 + P.dir*60, 0, Scene.W - vw);
+  G.camX += (target - G.camX) * Math.min(1, dt*5);
+  // focus
+  G.focus = null;
+  if (!locked && !G.auto){
+    let best = 1e9; const consider = (kind, i, x, prompt, reach) => { const d = Math.abs(x - P.x); if (d < reach && d < best){ best = d; G.focus = {kind, i, x, prompt, key:'E'}; } };
+    G.portals.forEach((p,i) => consider('portal', i, p.x, (p.locked ? 'Locked · try the door' : 'Go to ' + p.label + ' · ' + p.m + ' min'), 80));
+    G.npcs.forEach((n,i) => consider('npc', i, n.x, 'Interrogate ' + n.name.split(' ').slice(-1)[0] + ' · 15 min', 95));
+    if (G.spot && !G.spot.searched) consider('spot', 0, G.spot.x, 'Search here · 10 min', 80);
+  }
+}
+
+// ------------------------------------------------------------ actions
+async function afterCommand(){
+  updateHUD(); refreshFlags();
+  if (!G.S.running){ await endGame(); return true; }
+  return false;
+}
+async function doSearch(){
+  if (G.busy || !G.S.running) return; const S = G.S;
+  if (S.locations[S.location].searched){ toast('Already searched here', 'info'); return; }
+  G.busy = true; await walkTo(G.spot.x); G.player.act = 'search'; Sfx.click(); await sleep(1300);
+  const out = await cmd('search'); G.player.act = null; Intro.tutEvent('searched');
+  const finds = [...out.matchAll(/\[([A-Z ]+)\]\s+(.+?)\s+\(([CD]\d\d)\)/g)];
+  if (finds.length){ Sfx.find(); finds.forEach((m,i) => setTimeout(() => toast(`🔎 <b>${esc(m[2])}</b><small>${esc(m[1].toLowerCase())} · ${m[3]} added to evidence board</small>`), i*450)); }
+  else toast('Nothing new here', 'info');
+  if (/unlocks/i.test(out)) setTimeout(() => { Sfx.open(); toast('🔓 A new place is now open', 'info'); }, 600);
+  updateHUD(); refreshFlags();
+  await showDialog({name:'You search the area', face:detectivePortraitSVG(), text:out});
+  G.busy = false; await afterCommand();
+}
+async function doInterrogate(n){
+  if (G.busy || !G.S.running) return; G.busy = true; await walkTo(n.x + (G.player.x < n.x ? -70 : 70)); G.player.dir = G.player.x < n.x ? 1 : -1;
+  const out = await cmd('interrogate ' + n.id); Sfx.click(); Intro.tutEvent('talked');
+  const sus = G.S.suspects[n.id]; updateHUD();
+  await showDialog({name:sus.name, face:portraitSVG(n.id), text:out, talk:n.id});
+  G.busy = false; await afterCommand();
+}
+async function doHint(){
+  if (G.busy || !G.S.running) return; if (G.S.hintsLeft <= 0){ toast('No hints left', 'bad'); return; }
+  G.busy = true; const out = await cmd('hint'); Sfx.find(); updateHUD();
+  await showDialog({name:'Your instinct', face:detectivePortraitSVG(), text:out}); G.busy = false; await afterCommand();
+}
+// Cover the scene with black at once (no fade), so the menu's backdrop photo never shows between the menu and the game.
+function blackNow(){ const f = $('fade'); f.style.transition = 'none'; f.style.opacity = 1; void f.offsetWidth; }
+function blackDone(){ $('fade').style.transition = ''; }
+async function fade(on){ $('fade').style.opacity = on ? 1 : 0; await sleep(380); }
+async function travel(to, opts = {}){
+  if (G.busy && !opts.inner) return false; G.busy = true;
+  const S = G.S, from = S.location, p = G.portals.find(q => q.to === to);
+  if (p && !opts.skipWalk) await walkTo(p.x);
+  const before = S.time; Sfx.travel(); $('cine').classList.add('on'); await fade(true);
+  const out = await cmd('go ' + to);
+  if (G.S.location === from){          // blocked (locked door, not connected…)
+    $('cine').classList.remove('on'); await fade(false); Sfx.lock();
+    toast('🔒 ' + esc(out.trim().split('\n')[0] || 'You cannot go there'), 'bad'); G.busy = false; return false;
+  }
+  G.prevLoc = from; enterLocation(G.S.location, from); updateHUD();
+  const L = G.S.locations[G.S.location];
+  $('tcSmall').textContent = G.S.time; $('tcBig').textContent = L.name; $('tcSub').textContent = '+' + (p ? p.m : '') + ' min on foot';
+  $('cine').classList.add('title'); await fade(false); await sleep(900); $('cine').classList.remove('title','on');
+  Intro.tutEvent('traveled'); G.busy = false; return !(await afterCommand());
+}
+// Back: pops the movement history (a Stack in the C++ Player class).
+async function doBack(){
+  if (G.busy || G.dlg || G.modal || !G.S.running) return;
+  const from = G.S.location; G.busy = true;
+  const out = await cmd('back');
+  if (G.S.location === from){ toast('↩ ' + esc(out.trim().split('\n')[0] || 'Nowhere to go back to yet'), 'info'); G.busy = false; return; }
+  Sfx.travel(); $('cine').classList.add('on'); await fade(true);
+  G.prevLoc = from; enterLocation(G.S.location, from); updateHUD();
+  $('tcSmall').textContent = G.S.time; $('tcBig').textContent = G.S.locations[G.S.location].name; $('tcSub').textContent = 'Back the way you came';
+  $('cine').classList.add('title'); await fade(false); await sleep(800); $('cine').classList.remove('title','on');
+  G.busy = false; await afterCommand();
+}
+async function autoRoute(to){
+  if (G.busy || !G.S.running) return; if (to === G.S.location) return;
+  const r = await api('/api/route?to=' + to);
+  if (!r.path.length){ toast('🔒 No open route there right now', 'bad'); return; }
+  toast(`🧭 Fastest route: <b>${r.minutes} min</b><small>${r.path.map(i => sname(i)).join(' → ')}</small>`, 'info');
+  for (let i = 1; i < r.path.length; i++){ const ok = await travel(r.path[i]); if (!ok) break; }
+}
+
