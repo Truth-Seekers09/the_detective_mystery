@@ -482,6 +482,101 @@ void GameManager::collectClue(Clue* clue) {
         }
     }
 }
+void GameManager::cmdSearch() {
+    bool foundAny = false;
+    spend(SEARCH_MINUTES);                         // searching takes time
+    searched[player.getLocation()] = true;
+    for (const std::unique_ptr<Clue>& c : clues) {
+        if (c->getLocationId() == player.getLocation() && !player.hasClue(c->getId())) {
+            std::cout << "\nYou found something!\n";
+            collectClue(c.get());
+            foundAny = true;
+        }
+    }
+    if (!foundAny) std::cout << "You search carefully but find nothing new here.\n";
+}
+
+void GameManager::cmdJournal() const {
+    if (player.getJournal().empty()) {
+        std::cout << "Your journal is empty. Try 'search'.\n";
+        return;
+    }
+    std::vector<Clue*> sorted = player.getJournal();   // copy, then sort the copy
+    sortCluesByImportance(sorted);
+    std::cout << "\nJournal (" << sorted.size() << " of " << clues.size() << " clues):\n";
+    for (const Clue* c : sorted)
+        std::cout << "  " << c->getId() << "  importance " << c->getImportance() << "  "
+                  << c->getName() << " [" << c->getType() << "]\n";
+}
+
+void GameManager::cmdClue(const std::string& arg) const {
+    if (arg.empty()) {
+        std::cout << "Usage: clue <id>, for example: clue C02\n";
+        return;
+    }
+    Clue* c = clueTable.find(toUpper(arg));      // hash table lookup
+    if (!c) std::cout << "No clue has the id " << toUpper(arg) << ".\n";
+    else if (!player.hasClue(c->getId())) std::cout << "You haven't found that clue yet.\n";
+    else c->examine();                           // polymorphic call
+}
+
+void GameManager::cmdSuspects() const {
+    std::cout << "\nSuspects:\n";
+    for (const Suspect& s : suspects) {
+        std::cout << "  [" << s.getId() << "] " << s.getName() << ", " << s.getRole() << "\n"
+                  << "      Motive: " << s.getMotive() << "\n"
+                  << "      Alibi:  " << s.getAlibi() << "\n"
+                  << "      Found at: " << map.getLocation(s.getLocationId()).getName() << "\n";
+    }
+}
+
+void GameManager::cmdAccuse(const std::string& arg) {
+    int id = 0;
+    if (!toInt(arg, id) || id < 0 || id >= static_cast<int>(suspects.size())) {
+        std::cout << "Usage: accuse <number>. Use 'suspects' to see the numbers.\n";
+        return;
+    }
+    const Suspect& s = suspects[id];
+
+    // Only one chance: make the player confirm before it is spent.
+    std::cout << "\nYou are about to accuse " << s.getName() << ". You have "
+              << (theCase.getChances() - accusationsUsed) << " accusation left.\n"
+              << "Type YES to confirm: ";
+    std::string answer;
+    if (!std::getline(std::cin, answer) || toUpper(trim(answer)) != "YES") {
+        std::cout << "Accusation cancelled. Nothing was spent.\n";
+        return;
+    }
+
+    ++accusationsUsed;
+    accusedId = id;
+    int have = player.countIncriminating(id), need = theCase.getRequiredEvidence();
+    if (theCase.isCulprit(id) && have >= need) {
+        won = true;
+        outcome = "solved";
+        std::cout << "\nCASE SOLVED! " << s.getName() << " " << theCase.getCrime()
+                  << ". Your evidence leaves no room for doubt.\n";
+        endWithScore();
+        running = false;
+        return;
+    }
+
+    // Wrong person, or the right person without enough proof: both end the game.
+    if (theCase.isCulprit(id))
+        std::cout << "\nYou named the right person, but with only " << have
+                  << " piece(s) of incriminating evidence (" << need
+                  << " needed) the case collapses. ";
+    else
+        std::cout << "\nYou accuse " << s.getName() << ", but the evidence doesn't hold up. ";
+    if (accusationsUsed >= theCase.getChances()) {
+        std::cout << "That was your only accusation. The real culprit walks free. GAME OVER.\n";
+        revealCulprit();
+        outcome = "lost_accusation";
+        writeReport("Lost: wrong or unproven accusation of " + s.getName(), 0);
+        running = false;
+    }
+}
+
 
 
 
