@@ -1,11 +1,23 @@
-# locationA locationB (a direct walkable route)
-# Cluster near the BTECH Block
-0 2
-0 3
-0 4
-0 5
-2 4
-# The CSIT Block stands apart from the rest
-0 1
-# The Exam Cell is in the CSIT basement
-1 6
+# locationA locationB minutes   (minutes = walking time on the real campus)
+# Cluster around the BTECH Block. The Library is between BTECH and Petroleum / Quick Bite.
+0 5 1
+5 2 1
+5 4 1
+2 4 1
+0 7 1
+7 3 1
+0 8 1
+# CSIT Block: underground tunnel from BTECH, or the walk through Gate 1
+0 1 5
+0 10 3
+10 1 2
+# Exam Cell is in the CSIT basement
+1 6 1
+# Silver Jubilee Convention Centre is in front of Gate 1, and also on the road from CSIT
+10 9 1
+1 9 2
+# Gate 2 is ahead of Quick Bite Cafe and Petroleum Block, and far from Gate 1
+2 11 2
+4 11 2
+11 10 10
+11 9 8

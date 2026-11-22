@@ -23,6 +23,7 @@ public:
     bool isLocked() const { return locked; }
     const std::string& getRequiredClueId() const { return requiredClueId; }
     void unlock() { locked = false; }
+    void lock() { locked = true; }
 };
 
 #endif
