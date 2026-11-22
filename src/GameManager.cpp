@@ -576,6 +576,105 @@ void GameManager::cmdAccuse(const std::string& arg) {
         running = false;
     }
 }
+void GameManager::endWithScore() {
+    int score = computeScore(player.getMoves(), static_cast<int>(player.getJournal().size()),
+                             interrogationCount, hintsUsed, clock.minutesLeft());
+    std::cout << "Moves: " << player.getMoves() << "   Clues: " << player.getJournal().size()
+              << "   Interrogations: " << interrogationCount << "   Hints: " << hintsUsed
+              << "   Time left: " << clock.minutesLeft() << " min   Score: " << score << "\n";
+    finalScore = score;
+    writeReport("Solved", score);
+    if (practice) { std::cout << "\nPractice case complete: no high score is saved.\n"; return; }
+    std::cout << "Detective name (for the high-score table): ";
+    std::string name;
+    if (!std::getline(std::cin, name) || trim(name).empty()) name = "Anonymous";
+    std::string path = dataDir + "/scores.txt";
+    std::vector<ScoreEntry> table = loadScores(path);
+    table.push_back({trim(name), score});
+    sortScores(table);                           // insertion sort, best first
+    if (table.size() > 5) table.resize(5);
+    saveScores(path, table);
+    std::cout << "\nHigh scores:\n";
+    for (std::size_t i = 0; i < table.size(); ++i)
+        std::cout << "  " << (i + 1) << ". " << table[i].name << "  " << table[i].score << "\n";
+}
+
+// route / fastest: print the path found by BFS or Dijkstra.
+void GameManager::cmdRoute(const std::string& arg, bool fastest) const {
+    int target = 0;
+    if (!toInt(arg, target) || !map.isValid(target)) {
+        std::cout << "Usage: " << (fastest ? "fastest" : "route") << " <number>\n";
+        return;
+    }
+    int total = 0;
+    std::vector<int> path = fastest ? map.fastestRoute(player.getLocation(), target, &total)
+                                    : map.fewestStops(player.getLocation(), target);
+    if (path.empty()) {
+        std::cout << "No open route there right now (a locked place may be in the way).\n";
+        return;
+    }
+    if (!fastest) {
+        total = 0;
+        for (std::size_t i = 1; i < path.size(); ++i)
+            total += map.walkingMinutes(path[i - 1], path[i]);
+    }
+    std::cout << (fastest ? "Fastest route: " : "Fewest stops: ");
+    for (std::size_t i = 0; i < path.size(); ++i)
+        std::cout << (i ? " -> " : "") << map.getLocation(path[i]).getName();
+    std::cout << "  (" << total << " min)\n";
+}
+
+// interrogate: each suspect has a queue of lines. The front line is only given
+// if the player holds the clue it depends on; otherwise the suspect stonewalls
+// and the line stays at the front of the queue.
+void GameManager::cmdInterrogate(const std::string& arg) {
+    int id = 0;
+    if (!toInt(arg, id) || id < 0 || id >= static_cast<int>(suspects.size())) {
+        std::cout << "Usage: interrogate <suspect number>. Use 'suspects' to see the numbers.\n";
+        return;
+    }
+    const Suspect& s = suspects[id];
+    if (s.getLocationId() != player.getLocation()) {
+        std::cout << s.getName() << " is not here. You will find them at the "
+                  << map.getLocation(s.getLocationId()).getName() << ".\n";
+        return;
+    }
+    Queue<InterviewLine>& q = interviews[id];
+    if (q.isEmpty()) {
+        std::cout << s.getName() << " has nothing more to say.\n";
+        return;
+    }
+    const InterviewLine& next = q.front();
+    if (next.requiredClueId != "-" && !player.hasClue(next.requiredClueId)) {
+        std::cout << s.getName() << " crosses their arms: \"I've told you everything.\"\n"
+                  << "(Maybe you are missing a piece of evidence to confront them with.)\n";
+        return;
+    }
+    std::cout << "\n" << s.getName() << ": " << next.text << "\n";
+    spend(INTERROGATE_MINUTES);                    // a proper interrogation takes time
+    q.dequeue();
+    ++interrogationCount;
+}
+
+// find: linear keyword search through the journal (name and description).
+void GameManager::cmdFind(const std::string& arg) const {
+    if (arg.empty()) {
+        std::cout << "Usage: find <word>, for example: find toner\n";
+        return;
+    }
+    std::string word = toLower(arg);
+    int hits = 0;
+    for (const Clue* c : player.getJournal()) {
+        if (toLower(c->getName()).find(word) != std::string::npos ||
+            toLower(c->getDescription()).find(word) != std::string::npos) {
+            std::cout << "  " << c->getId() << "  " << c->getName() << " [" << c->getType() << "]\n";
+            ++hits;
+        }
+    }
+    if (hits == 0) std::cout << "No clue in your journal mentions \"" << arg << "\".\n";
+}
+
+
 
 
 
