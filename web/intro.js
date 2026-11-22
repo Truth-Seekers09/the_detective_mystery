@@ -110,5 +110,75 @@ const Intro = (function(){
       raf = requestAnimationFrame(frame);
     });
   }
+  // ---------------------------------------------------------------- win / lose effects on the #fx canvas
+  let fxRaf = 0;
+  function fxStop(){ cancelAnimationFrame(fxRaf); const cv = $('fx'), c = cv.getContext('2d'); c.clearRect(0,0,cv.width,cv.height); $('stage').style.filter = ''; }
+  function fxStart(kind, seconds){
+    fxStop(); const cv = $('fx'), c = cv.getContext('2d'), dpr = Math.min(devicePixelRatio||1, 2), W = innerWidth, H = innerHeight; cv.width = W*dpr; cv.height = H*dpr; c.setTransform(dpr,0,0,dpr,0,0);
+    const T0 = performance.now(), cols = ['#ffd36b','#ff9d4d','#7cf0d6','#ff6b9d','#9fb4ff','#ffffff'];
+    const P = kind === 'win' ? Array.from({length: 260}, () => ({x: Math.random()*W, y: -Math.random()*H, vx: (Math.random()-.5)*120, vy: 120 + Math.random()*260, r: 4 + Math.random()*7, a: Math.random()*6.28, va: (Math.random()-.5)*10, c: cols[(Math.random()*cols.length)|0]}))
+                                : Array.from({length: 220}, () => ({x: Math.random()*W, y: Math.random()*H, vy: 700 + Math.random()*500, l: 12 + Math.random()*18}));
+    if (kind === 'lose') $('stage').style.transition = 'filter 2.5s', $('stage').style.filter = 'grayscale(.9) brightness(.6)';
+    (function f(now){
+      const t = (now - T0)/1000; c.clearRect(0,0,W,H);
+      if (kind === 'win'){
+        c.save(); c.globalCompositeOperation = 'lighter';
+        for (let i = 0; i < 3; i++){ const x = W*(.2 + i*.3), a = Math.sin(t*1.2 + i*2)*.4, g = c.createLinearGradient(x, H, x + Math.sin(a)*300, 0); g.addColorStop(0,'rgba(255,230,160,.0)'); g.addColorStop(.3,'rgba(255,230,160,.10)'); g.addColorStop(1,'rgba(255,230,160,0)'); c.fillStyle = g; c.beginPath(); c.moveTo(x-30, H); c.lineTo(x+30, H); c.lineTo(x + Math.sin(a)*400 + 140, 0); c.lineTo(x + Math.sin(a)*400 - 140, 0); c.fill(); }
+        c.restore();
+        for (const p of P){ p.x += p.vx/60; p.y += p.vy/60; p.a += p.va/60; if (p.y > H + 20 && t < seconds - 2){ p.y = -20; p.x = Math.random()*W; } c.save(); c.translate(p.x, p.y); c.rotate(p.a); c.fillStyle = p.c; c.globalAlpha = .9; c.fillRect(-p.r/2, -p.r/4, p.r, p.r/2); c.restore(); }
+      } else {
+        c.strokeStyle = 'rgba(170,190,230,.35)'; c.lineWidth = 1.2; c.beginPath();
+        for (const p of P){ p.y += p.vy/60; if (p.y > H) { p.y = -20; p.x = Math.random()*W; } c.moveTo(p.x, p.y); c.lineTo(p.x - 3, p.y - p.l); } c.stroke();
+      }
+      if (t < seconds) fxRaf = requestAnimationFrame(f); else if (kind === 'win') c.clearRect(0,0,W,H);
+    })(T0);
+  }
+
+  // ---------------------------------------------------------------- styled case file
+  const fmt = m => { const t = 7*60 + m, h = Math.floor(t/60), mm = t%60; return (h > 12 ? h-12 : h) + ':' + String(mm).padStart(2,'0') + ' ' + (h >= 12 ? 'PM' : 'AM'); };
+  const esc2 = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  async function showCaseFile(){
+    const f = await (await fetch('/api/casefile')).json(), S = G.S, win = f.outcome === 'solved';
+    const name = i => i >= 0 && S.suspects[i] ? S.suspects[i].name : '—';
+    const verdict = win ? `You named <b>${esc2(name(f.accused))}</b> and the evidence held. The case is closed.`
+      : f.outcome === 'lost_time' ? `The clock reached 10:00 before you made your accusation. The real culprit was <b>${esc2(name(f.culprit))}</b>.`
+      : `You accused <b>${esc2(name(f.accused))}</b>, but ${f.accused === f.culprit ? 'you did not hold enough proof' : 'the evidence did not hold up'}. The real culprit was <b>${esc2(name(f.culprit))}</b>.`;
+    const tl = f.timeline.map(x => `<div class="t">${fmt(x.minute)}</div><div class="i">${x.id}</div><div>${esc2(x.name)}<div class="ty">${esc2(x.type)}</div></div><div class="st">${'★'.repeat(x.importance)}</div>`).join('') || '<div style="grid-column:1/-1;color:var(--muted)">No evidence was collected.</div>';
+    const route = f.route.map((n,i) => (i ? '<em>→</em>' : '') + `<span>${esc2(n)}</span>`).join('');
+    $('fileSheet').innerHTML = `<div class="stamp ${win?'win':'lose'}">${win ? 'SOLVED' : 'CLOSED'}</div>
+      <div class="eyebrow">Case file · Graphic Era</div><h2>${esc2(f.title)}</h2>
+      <div style="color:var(--muted);font-size:13px">Difficulty: ${esc2(f.difficulty)} · Detective: ${esc2(G.name)}</div>
+      <div class="fstats"><div><b>${f.score}</b><span>Score</span></div><div><b>${f.minutesUsed}</b><span>Minutes used</span></div><div><b>${S.moves}</b><span>Moves</span></div><div><b>${S.journal.length}</b><span>Clues</span></div><div><b>${f.interrogations}/${f.hints}</b><span>Talks / hints</span></div></div>
+      <h3>Verdict</h3><div class="verdictBox">${verdict}</div>
+      <h3>Evidence timeline</h3><div class="tl">${tl}</div>
+      <h3>Route walked</h3><div class="routeChips">${route}</div>
+      <div class="fileBtns"><button class="btn primary" id="filePrint">🖨 Print / save as PDF</button><button class="btn" id="fileClose">Close</button></div>`;
+    $('casefile').classList.add('open'); Sfx.open();
+    $('fileClose').onclick = () => { $('casefile').classList.remove('open'); Sfx.close(); };
+    $('filePrint').onclick = () => window.print();
+  }
+
+  // ---------------------------------------------------------------- tutorial coach
+  const STEPS = [
+    ['moved','Walk: hold <b>A / D</b> or the arrow keys. Hold <b>Shift</b> to run.'],
+    ['searched','Walk to the glowing ✦ and press <b>F</b> to search this place.'],
+    ['journal','Press <b>J</b> to open the Evidence board. Press <b>Esc</b> to close it.'],
+    ['traveled','Walk to a glowing doorway and press <b>E</b> to travel there.'],
+    ['talked','Find a person and press <b>E</b> next to them to interrogate.'],
+    ['deduced','Collect the <b>Torn Register Page</b> and the <b>Chalk-dusted Glove</b>, open the Evidence board and combine those two cards.'],
+    ['accused','Press <b>X</b>, pick who your evidence points to and accuse. You only get one chance.']
+  ];
+  const tut = {on:false, i:0, seen:new Set()};
+  function tutStart(){ tut.on = true; tut.i = 0; tut.seen = new Set(); $('tut').classList.remove('hidden', 'done'); tutRender(); }
+  function tutStop(){ tut.on = false; $('tut').classList.add('hidden'); }
+  function tutEvent(ev){ if (!tut.on) return; tut.seen.add(ev); const before = tut.i; while (tut.i < STEPS.length && tut.seen.has(STEPS[tut.i][0])) tut.i++; if (tut.i !== before){ Sfx.find(); tutRender(); } }
+  function tutRender(){
+    $('tutHead').textContent = tut.i >= STEPS.length ? 'Tutorial complete' : `Tutorial · step ${tut.i+1} of ${STEPS.length}`;
+    $('tutText').innerHTML = tut.i >= STEPS.length ? 'Well done! You know everything you need.' : STEPS[tut.i][1];
+    $('tutBar').firstElementChild.style.width = (tut.i/STEPS.length*100) + '%'; $('tut').classList.toggle('done', tut.i >= STEPS.length);
+  }
+
+  return {boot, wireGuide, openGuide, playOpening, fxStart, fxStop, showCaseFile, tutStart, tutStop, tutEvent, isTutorial: () => tut.on};
+})();
 
 
