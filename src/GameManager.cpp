@@ -673,6 +673,104 @@ void GameManager::cmdFind(const std::string& arg) const {
     }
     if (hits == 0) std::cout << "No clue in your journal mentions \"" << arg << "\".\n";
 }
+void GameManager::spend(int minutes) { clock.spend(minutes); }
+
+void GameManager::revealCulprit() const {
+    for (const Suspect& x : suspects)
+        if (theCase.isCulprit(x.getId())) std::cout << "The culprit was " << x.getName() << ".\n";
+}
+
+void GameManager::cmdTime() const {
+    std::cout << "It is " << clock.timeText() << ". The exam starts in " << clock.minutesLeft()
+              << " minutes.\n";
+}
+
+// hint: breadth-first search (fewest stops) to every place that is unsearched and
+// still holds clues; point at the nearest one. Costs 15 minutes and 50 points.
+void GameManager::cmdHint() {
+    if (hintsUsed >= difficulty.hintsAllowed) {
+        std::cout << "No hints left on " << difficulty.name << " difficulty.\n";
+        return;
+    }
+    std::vector<int> best;
+    for (int loc = 0; loc < map.size(); ++loc) {
+        if (searched[loc] || map.getLocation(loc).isLocked()) continue;
+        bool hasClues = false;
+        for (const std::unique_ptr<Clue>& c : clues)
+            if (c->getLocationId() == loc) hasClues = true;
+        if (!hasClues) continue;
+        std::vector<int> path = map.fewestStops(player.getLocation(), loc);
+        if (!path.empty() && (best.empty() || path.size() < best.size())) best = path;
+    }
+    ++hintsUsed;
+    spend(HINT_MINUTES);
+    if (best.empty()) {
+        std::cout << "Nothing obvious is left to search. Think about who you can question, "
+                  << "and whether two clues fit together ('deduce').\n";
+        return;
+    }
+    if (best.size() == 1)
+        std::cout << "You haven't searched here yet. Try 'search'.\n";
+    else
+        std::cout << "A nearby place you haven't searched yet: " << map.getLocation(best.back()).getName()
+                  << ". Next step: " << map.getLocation(best[1]).getName() << ".\n"
+              << "(Hints used: " << hintsUsed << " of " << difficulty.hintsAllowed << ")\n";
+}
+
+// deduce: look the pair of clue ids up in the hash table.
+void GameManager::cmdDeduce(const std::string& arg) {
+    std::istringstream in(arg);
+    std::string a, b;
+    if (!(in >> a >> b)) {
+        std::cout << "Usage: deduce <clue> <clue>, for example: deduce C03 C10\n";
+        return;
+    }
+    a = toUpper(a);
+    b = toUpper(b);
+    if (!player.hasClue(a) || !player.hasClue(b) || a == b) {
+        std::cout << "You can only combine two different clues that are both in your journal.\n";
+        return;
+    }
+    spend(DEDUCE_MINUTES);
+    if (b < a) std::swap(a, b);
+    Clue* result = deductionTable.find(a + "+" + b);
+    if (!result) {
+        std::cout << "You lay them side by side, but they don't tell you anything new together.\n";
+    } else if (player.hasClue(result->getId())) {
+        std::cout << "You have already worked that out.\n";
+    } else {
+        std::cout << "\nThe pieces click together!\n";
+        collectClue(result);
+    }
+}
+
+// Writes a plain-text case file: outcome, what was found and when (in the order
+// found), the evidence ranked by importance (insertion sort), and the route.
+void GameManager::writeReport(const std::string& outcome, int score) const {
+    if (practice) return;
+    std::ofstream out("case_report.txt");
+    if (!out) return;
+    out << "CASE REPORT - " << theCase.getTitle() << "\n"
+        << "Outcome: " << outcome << "\n"
+        << "Difficulty: " << difficulty.name << "   Score: " << score << "\n"
+        << "Time used: " << clock.getElapsed() << " of " << difficulty.minutes << " minutes\n"
+        << "Hints used: " << hintsUsed << "   Interrogations: " << interrogationCount << "\n\n"
+        << "EVIDENCE TIMELINE (in the order found)\n";
+    for (const auto& f : findLog) {
+        const Clue* c = clueTable.find(f.first);
+        out << "  " << GameClock::format(7 * 60 + f.second) << "  " << c->getId() << "  "
+            << c->getName() << "\n";
+    }
+    std::vector<Clue*> ranked = player.getJournal();
+    sortCluesByImportance(ranked);
+    out << "\nEVIDENCE BY IMPORTANCE\n";
+    for (const Clue* c : ranked)
+        out << "  importance " << c->getImportance() << "  " << c->getId() << "  " << c->getName() << "\n";
+    out << "\nROUTE WALKED\n  ";
+    for (std::size_t i = 0; i < routeLog.size(); ++i)
+        out << (i ? " -> " : "") << map.getLocation(routeLog[i]).getName();
+    out << "\n";
+}
 
 
 
