@@ -1,9 +1,36 @@
 # id|type(PHYSICAL/TESTIMONY/DOCUMENT)|name|description|locationId|suspectId(-1 none)|incriminating(0/1)|importance(1-5)
+# C01-C08 are the Phase 2 clues, unchanged. C09-C28 are new in Phase 3.
 C01|DOCUMENT|Authorisation Letter|A letter from the Controller of Examinations allowing you to enter the Exam Cell and question staff.|0|-1|0|2
-C02|PHYSICAL|Slit Paper Envelope|The sealed envelope is slit open neatly and empty. The door lock shows no damage so the thief entered with a proper access card.|6|-1|0|3
-C03|DOCUMENT|Card Swipe Log|The door log shows card 2207 issued to the CSIT lab assistant used at 11:52 PM long after he says he went home.|6|0|1|5
-C04|DOCUMENT|Loan Reminder|A final reminder for an unpaid personal loan addressed to Anand Verma and left in a lab drawer.|1|0|1|3
-C05|DOCUMENT|Crumpled Printout|Crumpled pages from the stolen paper thrown in a bin in the Old MCA Block. Someone copied it in a hurry.|2|0|1|5
-C06|TESTIMONY|Canteen Owner's Statement|The canteen owner says Neha Kapoor sat at a corner table with her notes until closing time at 10:30 PM looking anxious about the exam.|3|1|0|3
-C07|DOCUMENT|Late-Stay Slip|A slip showing Ms. Seema Joshi stayed in the library until 10 PM. It looks suspicious but she was only packing returned books.|5|2|0|2
-C08|TESTIMONY|Cafe Manager's Statement|The manager remembers a man in a grey lab coat handing a folded sheet to two students at a corner table at 7:45 AM just before the exam.|4|0|1|4
+C02|PHYSICAL|Slit Paper Envelope|The sealed envelope is slit open neatly and empty. The door lock shows no damage, so the thief entered with a proper access card.|6|-1|0|3
+C03|DOCUMENT|Card Swipe Log|The door log shows card 2207, issued to the CSIT lab assistant, used at 11:52 PM, long after he says he went home.|6|0|1|5
+C04|DOCUMENT|Loan Reminder|A final reminder for an unpaid personal loan, addressed to Anand Verma and left in a lab drawer.|1|0|1|3
+C05|DOCUMENT|Crumpled Printout|Crumpled pages from the stolen paper, thrown in a bin in the Petroleum Block. Someone copied it in a hurry.|2|0|1|5
+C06|TESTIMONY|Canteen Owner's Statement|The canteen owner says Neha Kapoor sat at a corner table with her notes until closing time at 10:30 PM, looking anxious about the exam.|3|1|0|3
+C07|DOCUMENT|Late-Stay Slip|A slip showing Ms. Seema Joshi stayed in the library until 10 PM. It looks suspicious, but she was only packing returned books.|5|2|0|2
+C08|TESTIMONY|Cafe Manager's Statement|The manager remembers a man in a grey lab coat handing a folded sheet to two students at a corner table at 7:45 AM, just before the exam.|4|0|1|4
+C09|DOCUMENT|Event Hall Pass|A laminated pass left on the guard's desk. It lets the holder into the Silver Jubilee Convention Centre while the fest equipment is still inside.|10|-1|0|2
+C10|DOCUMENT|Gate 1 Visitor Register|Staff sign-out at 6:30 PM matches the lab assistant's claim. But the same page has a second entry at 11:20 PM, signed back in with the note "forgot my charger".|10|0|1|4
+C11|TESTIMONY|Mr. Rawat's Night Statement|The guard admits he dozed off in his cabin between 11:30 PM and 12:15 AM. He says nobody could have passed without him noticing, though he cannot explain the long gap.|10|3|0|3
+C12|TESTIMONY|Mr. Chauhan's Statement|The Gate 2 guard says a man in a lab coat left through Gate 2 at 6:10 AM carrying a heavy file bag. Staff almost never use this gate, which is why he remembers.|11|0|1|4
+C13|PHYSICAL|Gate 2 Torn Page|A torn corner of a printed page caught on the Gate 2 fence. It is blank, apart from a printer's cut mark that matches the exam paper stock.|11|-1|0|2
+C14|TESTIMONY|Pooja's Statement|She says a regular came in at 6:50 AM for black coffee, with hands stained grey from printer toner. He paid in coins and left in a hurry.|7|0|1|3
+C15|PHYSICAL|Lost Pen Drive|A pen drive left on the cafe counter. It holds fest photos and a half-finished assignment, nothing to do with the paper.|7|6|0|2
+C16|DOCUMENT|Lab Booking Sheet|Shows Isha Bansal booked a Civil Block study room from 9 PM to 1 AM and signed out at the end. Her alibi holds.|8|10|0|2
+C17|TESTIMONY|Isha's Statement|She says she saw a student arguing with a lab assistant outside the CSIT Block at about 9 PM. She did not hear the argument, only that it was heated.|8|10|0|3
+C18|DOCUMENT|Locker Rental Slip|A backstage locker, number 14, was rented at 8 PM under the initials "A.V." The slip is stamped and the locker holds a bag that still smells of fresh toner.|9|0|1|5
+C19|TESTIMONY|Sandeep's Statement|He saw someone carrying a file bag into the hall around midnight, but the lights were off for the clean-up and he never saw the face.|9|7|0|3
+C20|DOCUMENT|Fest Volunteer Roster|Shows Kabir Sharma on duty at the entrance until 1 AM, with three other volunteers confirming it. He could not have been at the Exam Cell.|9|9|0|2
+C21|TESTIMONY|Kabir's Statement|He says a rumour about the paper was spreading in a student group chat by 7 AM, but nobody could say who started it.|2|9|0|3
+C22|PHYSICAL|Torn Grey Thread|A grey thread caught on the bin lid beside the crumpled pages. It is from a lab coat, and fresh toner is smeared on it.|2|0|1|3
+C23|TESTIMONY|Prof. Meera's Statement|She says only she and the Exam Cell in-charge hold keys. She adds that lab staff often borrow the spare from the BTECH office.|1|8|0|3
+C24|DOCUMENT|Spare Key Register|The BTECH office register shows the spare Exam Cell key was signed out at 11 PM by "A. V., lab staff" and signed back at 6:05 AM.|0|0|1|4
+C25|TESTIMONY|Dr. Sethi's Statement|He says he left at 9:15 PM after a heated argument with the paper-setter about how hard the paper was. He admits he was angry but says he never returned.|0|5|0|3
+C26|TESTIMONY|Controller's Briefing|The paper was sealed at 8:30 PM and found missing at 7 AM. The thief had a window of about ten hours and did not break any lock.|0|-1|0|1
+C27|TESTIMONY|Rohit's Confession|After some pressure, he admits he tried to buy the paper from a "senior" last week but never got it. He says he was nowhere near the Exam Cell.|4|4|0|4
+C28|DOCUMENT|Library Return Receipt|A stamped receipt shows Ms. Seema Joshi left the library at 10:05 PM, matching her statement. She is clear.|5|2|0|2
+# Deduced clues (location -1: never found by searching, only by 'deduce')
+D01|DOCUMENT|Deduction: The Cardholder|Card 2207 opened the Exam Cell at 11:52 PM. The register shows that the lab assistant, Anand Verma, signed back into campus at 11:20 PM, so the cardholder was inside the campus that night, and he lied about going home.|-1|0|1|5
+D02|TESTIMONY|Deduction: The Bag's Journey|The toner-scented bag in the backstage locker is the same heavy file bag the Gate 2 guard saw leaving at 6:10 AM. Someone hid the papers in the convention centre first, then carried them out through the quietest gate.|-1|0|1|4
+D03|PHYSICAL|Deduction: The Toner Trail|The man with toner on his hands at 6:50 AM and the toner-smeared grey thread at the bin are the same trail: someone who wears a grey lab coat photocopied the paper before dawn.|-1|0|1|4
+D04|TESTIMONY|Deduction: A Reliable Witness|Isha was in the Civil Block study room all night. So her sighting of a student arguing with a lab assistant outside CSIT at nine is trustworthy, and it makes a lab assistant, not a student, the person to look at.|-1|10|0|3
+D05|TESTIMONY|Deduction: The Guard's Sleep|The register entry at 11:20 PM was made before Mr. Rawat dozed off at 11:30 PM. He saw who came in, and his later sleep did not help the thief. He is a careless guard, not a culprit.|-1|3|0|3
