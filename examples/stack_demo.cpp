@@ -1,5 +1,7 @@
 // Small demo of our Stack<T>. It shows the same idea the game uses for the
-// "back" command. 
+// "back" command. Build and run from the project folder:
+//   g++ -std=c++17 -Iinclude examples/stack_demo.cpp -o stack_demo
+//   ./stack_demo
 #include <iostream>
 #include <string>
 
@@ -8,11 +10,11 @@
 int main() {
     // Places the player has visited, most recent on top.
     Stack<int> history;
-    std::string names[] = {"BTECH Block", "CSIT Block", "Old MCA Block", "Quick Bite Cafe"};
+    std::string names[] = {"BTECH Block", "CSIT Block", "Petroleum Block", "Quick Bite Cafe"};
 
-    std::cout << "Walking: BTECH Block -> Old MCA Block -> Quick Bite Cafe\n";
+    std::cout << "Walking: BTECH Block -> Petroleum Block -> Quick Bite Cafe\n";
     history.push(0);   // leaving BTECH Block
-    history.push(2);   // leaving Old MCA Block
+    history.push(2);   // leaving Petroleum Block
     std::cout << "Places remembered: " << history.size() << "\n";
     std::cout << "Most recent place (peek): " << names[history.peek()] << "\n\n";
 

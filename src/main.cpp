@@ -11,6 +11,10 @@ int main(int argc, char* argv[]) {
                   << "'. Run the program from the project folder or pass the data folder path.\n";
         return 1;
     }
+    if (argc > 2 && !game.setDifficulty(argv[2])) {
+        std::cerr << "Unknown difficulty '" << argv[2] << "'. Use easy, normal or detective.\n";
+        return 1;
+    }
     game.run();
     return 0;
 }
