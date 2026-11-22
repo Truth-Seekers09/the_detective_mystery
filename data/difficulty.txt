@@ -1,0 +1,5 @@
+# name|minutesAvailable|proofsNeeded|hintsAllowed
+# The story starts at 7:00 AM and the exam is at 10:00 AM, so "normal" is 180 minutes.
+easy|240|4|10
+normal|180|6|3
+detective|120|7|0
