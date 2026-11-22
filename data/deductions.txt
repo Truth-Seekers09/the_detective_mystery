@@ -1,0 +1,6 @@
+# clueA|clueB|resultClueId   (combine two clues you hold with 'deduce A B'; the result clue is defined in clues.txt with location -1)
+C03|C10|D01
+C12|C18|D02
+C14|C22|D03
+C16|C17|D04
+C10|C11|D05
