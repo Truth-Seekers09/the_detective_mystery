@@ -185,5 +185,90 @@ static void testWalker() {
     assert(w.x() == 7 && w.y() == 8 && !w.isMoving());
     std::cout << "Walker (character movement): OK\n";
 }
+static void testTypewriter() {
+    Typewriter t(10);
+    t.start("Hello");
+    assert(t.text() == "" && !t.isDone());
+    t.update(0.3f);
+    assert(t.text() == "Hel");
+    t.skip();
+    assert(t.text() == "Hello" && t.isDone());
+    std::cout << "Typewriter: OK\n";
+}
+
+static void testConsoleCapture() {
+    GameManager g("data");
+    assert(g.loadData() && g.isRunning() && g.currentLocation() == 0);
+    std::string out = runCommand(g, "look");
+    assert(out.find("BTECH Block") != std::string::npos);
+    out = runCommand(g, "go 7");
+    assert(g.currentLocation() == 7 && g.minutesLeft() == 179 && g.clockText() == "7:01 AM");
+    out = runCommand(g, "accuse 1", "YES\n");          // the YES is fed in as typed input
+    assert(!g.isRunning() && out.find("GAME OVER") != std::string::npos);
+    std::cout << "Console capture for the graphical front end: OK\n";
+}
+
+static void testRealCollisions() {
+    // Phase 3 has 28 clues but the table has 11 buckets, so chains must form.
+    std::vector<PhysicalClue> v;
+    for (int i = 1; i <= 28; ++i) {
+        std::string id = std::string("C") + (i < 10 ? "0" : "") + std::to_string(i);
+        v.push_back(PhysicalClue(id, "n", "d", 0, -1, false, 1));
+    }
+    ClueTable t(11);
+    for (PhysicalClue& c : v) t.insert(c.getId(), &c);
+    assert(t.size() == 28 && t.longestChain() >= 3);   // 28 keys in 11 buckets
+    for (PhysicalClue& c : v) assert(t.find(c.getId()) == &c);
+    std::cout << "Hash table with real collisions: OK (longest chain " << t.longestChain() << ")\n";
+}
+
+// Back (Stack) and save / resume.
+static void testBackAndSave() {
+    GameManager g("data");
+    assert(g.loadData());
+    runCommand(g, "search");
+    runCommand(g, "go 7");
+    runCommand(g, "search");
+    runCommand(g, "go 0");
+    runCommand(g, "back");                                    // Stack: pop returns to place 7
+    assert(g.currentLocation() == 7);
+    runCommand(g, "go 0");
+    runCommand(g, "go 5");
+    assert(g.saveGame("test_save.tmp"));
+    GameManager h("data");
+    assert(h.loadData());
+    assert(h.loadGame("test_save.tmp"));
+    assert(h.currentLocation() == 5 && g.currentLocation() == 5);
+    assert(h.getPlayer().getMoves() == g.getPlayer().getMoves());
+    assert(h.getPlayer().getJournal().size() == g.getPlayer().getJournal().size());
+    assert(h.elapsedMinutes() == g.elapsedMinutes());
+    assert(h.wasSearched(0) && h.wasSearched(7));
+    runCommand(h, "back");                                    // the history stack was restored too
+    assert(h.currentLocation() == 0);
+    std::remove("test_save.tmp");
+    GameManager bad("data");
+    assert(bad.loadData());
+    assert(!bad.loadGame("no_such_file.tmp"));
+    std::cout << "Back and save/resume: OK\n";
+}
+
+int main() {
+    testStack();
+    testHashTable();
+    testGraph();
+    testSorting();
+    testPlayer();
+    testQueue();
+    testRouting();
+    testScores();
+    testClock();
+    testWalker();
+    testTypewriter();
+    testConsoleCapture();
+    testRealCollisions();
+    testBackAndSave();
+    std::cout << "All tests passed.\n";
+    return 0;
+}
 
 
