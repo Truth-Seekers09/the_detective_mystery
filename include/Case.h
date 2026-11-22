@@ -12,18 +12,21 @@ private:
     std::string intro;
     int culpritId;
     int requiredEvidence;   // incriminating clues needed to convict
+    int chances;            // accusations allowed (Phase 3: 1)
 
 public:
-    Case() : culpritId(-1), requiredEvidence(0) {}
+    Case() : culpritId(-1), requiredEvidence(0), chances(1) {}
     Case(const std::string& title, const std::string& crime, const std::string& intro,
-         int culpritId, int requiredEvidence)
+         int culpritId, int requiredEvidence, int chances = 1)
         : title(title), crime(crime), intro(intro), culpritId(culpritId),
-          requiredEvidence(requiredEvidence) {}
+          requiredEvidence(requiredEvidence), chances(chances) {}
 
     const std::string& getTitle() const { return title; }
     const std::string& getCrime() const { return crime; }
     const std::string& getIntro() const { return intro; }
     int getRequiredEvidence() const { return requiredEvidence; }
+    void setRequiredEvidence(int n) { requiredEvidence = n; }
+    int getChances() const { return chances; }
     bool isCulprit(int suspectId) const { return suspectId == culpritId; }
 };
 
