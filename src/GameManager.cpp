@@ -100,4 +100,108 @@ bool GameManager::setDifficulty(const std::string& name) {
     }
     return false;
 }
+// ---- Save / resume -------------------------------------------------------
+// Plain text file, one "key|value" line per item (same style as the data files).
+// A save keeps only what changes while playing; the case itself is reloaded from data/.
+bool GameManager::saveGame(const std::string& path) {
+    if (!running || practice) return false;
+    std::ofstream out(path);
+    if (!out) return false;
+    auto join = [](const std::vector<std::string>& v) {
+        std::string r;
+        for (std::size_t i = 0; i < v.size(); ++i) r += (i ? "," : "") + v[i];
+        return r;
+    };
+    std::vector<std::string> hist, ids, found, route, seen, left;
+    for (int h : player.historyList()) hist.push_back(std::to_string(h));
+    for (const Clue* c : player.getJournal()) ids.push_back(c->getId());
+    for (const auto& f : findLog) found.push_back(f.first + ":" + std::to_string(f.second));
+    for (int r : routeLog) route.push_back(std::to_string(r));
+    for (std::size_t i = 0; i < searched.size(); ++i) if (searched[i]) seen.push_back(std::to_string(i));
+    for (const Queue<InterviewLine>& q : interviews) left.push_back(std::to_string(q.size()));
+    out << "HTSAVE|1\n"
+        << "difficulty|" << difficulty.name << "\n"
+        << "elapsed|" << clock.getElapsed() << "\n"
+        << "location|" << player.getLocation() << "\n"
+        << "moves|" << player.getMoves() << "\n"
+        << "history|" << join(hist) << "\n"
+        << "hints|" << hintsUsed << "\n"
+        << "interrogations|" << interrogationCount << "\n"
+        << "clues|" << join(ids) << "\n"
+        << "found|" << join(found) << "\n"
+        << "route|" << join(route) << "\n"
+        << "searched|" << join(seen) << "\n"
+        << "interviews|" << join(left) << "\n";
+    return static_cast<bool>(out);
+}
+
+// Rebuilds the state from a save. Call on a freshly loaded game. Every value is
+// checked; on any problem it returns false and the caller throws this game away.
+bool GameManager::loadGame(const std::string& path) {
+    std::ifstream in(path);
+    if (!in) return false;
+    std::vector<std::pair<std::string, std::string>> kv;
+    std::string line;
+    while (std::getline(in, line)) {
+        if (!line.empty() && line.back() == '\r') line.pop_back();
+        std::size_t bar = line.find('|');
+        if (bar == std::string::npos) return false;
+        kv.push_back({line.substr(0, bar), line.substr(bar + 1)});
+    }
+    if (kv.size() != 13 || kv[0].first != "HTSAVE" || kv[0].second != "1") return false;
+    auto get = [&](const std::string& key, std::string& value) {
+        for (const auto& p : kv) if (p.first == key) { value = p.second; return true; }
+        return false;
+    };
+    auto list = [](const std::string& text) {
+        std::vector<std::string> v;
+        for (const std::string& t : split(text, ',')) if (!t.empty()) v.push_back(t);
+        return v;
+    };
+    std::string diff, elapsedS, locS, movesS, histS, hintsS, intS, cluesS, foundS, routeS, seenS, ivS;
+    if (!get("difficulty", diff) || !get("elapsed", elapsedS) || !get("location", locS) || !get("moves", movesS) ||
+        !get("history", histS) || !get("hints", hintsS) || !get("interrogations", intS) || !get("clues", cluesS) ||
+        !get("found", foundS) || !get("route", routeS) || !get("searched", seenS) || !get("interviews", ivS))
+        return false;
+    int elapsed = 0, loc = 0, moves = 0, hints = 0, talks = 0;
+    if (!setDifficulty(diff) || !toInt(elapsedS, elapsed) || !toInt(locS, loc) || !toInt(movesS, moves) ||
+        !toInt(hintsS, hints) || !toInt(intS, talks)) return false;
+    if (elapsed < 0 || elapsed >= difficulty.minutes || !map.isValid(loc) || moves < 0 ||
+        hints < 0 || hints > difficulty.hintsAllowed || talks < 0) return false;
+
+    std::vector<int> hist, route;
+    for (const std::string& t : list(histS)) { int v; if (!toInt(t, v) || !map.isValid(v)) return false; hist.push_back(v); }
+    for (const std::string& t : list(routeS)) { int v; if (!toInt(t, v) || !map.isValid(v)) return false; route.push_back(v); }
+    for (const std::string& t : list(cluesS)) {
+        Clue* c = clueTable.find(t);
+        if (!c || !player.addClue(c)) return false;          // unknown or repeated clue id
+    }
+    findLog.clear();
+    for (const std::string& t : list(foundS)) {
+        std::vector<std::string> f = split(t, ':');
+        int when = 0;
+        if (f.size() != 2 || !player.hasClue(f[0]) || !toInt(f[1], when)) return false;
+        findLog.push_back({f[0], when});
+    }
+    std::fill(searched.begin(), searched.end(), false);
+    for (const std::string& t : list(seenS)) { int v; if (!toInt(t, v) || !map.isValid(v)) return false; searched[v] = true; }
+    std::vector<std::string> left = list(ivS);
+    if (left.size() != interviews.size()) return false;
+    for (std::size_t i = 0; i < left.size(); ++i) {           // drop the lines already given
+        int remaining = 0;
+        if (!toInt(left[i], remaining) || remaining < 0 || remaining > interviews[i].size()) return false;
+        while (interviews[i].size() > remaining) interviews[i].dequeue();
+    }
+    for (int i = 0; i < map.size(); ++i) {                    // doors open for clues already held
+        Location& l = map.getLocation(i);
+        if (l.isLocked() && player.hasClue(l.getRequiredClueId())) l.unlock();
+    }
+    clock.spend(elapsed);
+    player.restore(loc, moves, hist);
+    routeLog = route;
+    hintsUsed = hints;
+    interrogationCount = talks;
+    return true;
+}
+
 
