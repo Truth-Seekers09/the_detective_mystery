@@ -366,6 +366,123 @@ void GameManager::run() {
     }
     std::cout << "\nThanks for playing.\n";
 }
+// Runs one typed command. Used by the text loop above and by the SFML front end.
+void GameManager::handleLine(const std::string& line) {
+    std::istringstream in(line);
+    std::string cmd, arg;
+    in >> cmd;
+    std::getline(in, arg);
+    cmd = toLower(cmd);
+    arg = trim(arg);
+
+    if (cmd.empty()) return;
+    else if (cmd == "help") printHelp();
+    else if (cmd == "look") cmdLook();
+    else if (cmd == "go") cmdGo(arg);
+    else if (cmd == "back") cmdBack();
+    else if (cmd == "search") cmdSearch();
+    else if (cmd == "journal") cmdJournal();
+    else if (cmd == "clue") cmdClue(arg);
+    else if (cmd == "suspects") cmdSuspects();
+    else if (cmd == "accuse") cmdAccuse(arg);
+    else if (cmd == "route") cmdRoute(arg, false);
+    else if (cmd == "fastest") cmdRoute(arg, true);
+    else if (cmd == "interrogate") cmdInterrogate(arg);
+    else if (cmd == "find") cmdFind(arg);
+    else if (cmd == "hint") cmdHint();
+    else if (cmd == "deduce") cmdDeduce(arg);
+    else if (cmd == "time") cmdTime();
+    else if (cmd == "quit" || cmd == "exit") running = false;
+    else std::cout << "Unknown command. Type 'help'.\n";
+
+    if (running && clock.isUp()) {
+        std::cout << "\nThe clock strikes 10:00. The exam begins and the paper is already out. "
+                  << "You ran out of time. GAME OVER.\n";
+        revealCulprit();
+        outcome = "lost_time";
+        writeReport("Lost: time ran out", 0);
+        running = false;
+    }
+}
+
+void GameManager::printHelp() const {
+    std::cout << "\nCommands:\n"
+              << "  look              describe where you are and the exits\n"
+              << "  go <number>       move to a connected location\n"
+              << "  back              return to the previous location (stack)\n"
+              << "  search            search this location for clues (10 min)\n"
+              << "  journal           your clues, most important first (sorting)\n"
+              << "  clue <id>         re-read a collected clue, e.g. clue C02 (hash table)\n"
+              << "  suspects          list the suspects\n"
+              << "  accuse <number>   name the culprit (ONE chance only)\n"
+              << "  interrogate <n>   question a suspect who is in this location (15 min, queue)\n"
+              << "  route <number>    fewest stops to a place (breadth-first search)\n"
+              << "  fastest <number>  shortest walking time to a place (Dijkstra)\n"
+              << "  find <word>       search your journal for a keyword\n"
+              << "  deduce <A> <B>    combine two clues you hold, e.g. deduce C03 C10 (hash table)\n"
+              << "  hint              nearest unsearched place with clues (15 min, -50 score)\n"
+              << "  time              show the clock\n"
+              << "  quit\n";
+}
+
+void GameManager::cmdLook() const {
+    const Location& here = map.getLocation(player.getLocation());
+    std::cout << "\n-- " << here.getName() << " --   " << clock.timeText() << " ("
+              << clock.minutesLeft() << " min left)\n" << here.getDescription() << "\nExits:\n";
+    for (int id : map.neighbours(here.getId())) {
+        const Location& l = map.getLocation(id);
+        std::cout << "  [" << id << "] " << l.getName() << "  (" << map.walkingMinutes(here.getId(), id)
+                  << " min)" << (l.isLocked() ? "  (locked)" : "") << "\n";
+    }
+}
+
+void GameManager::cmdGo(const std::string& arg) {
+    int target = 0;
+    if (!toInt(arg, target) || !map.isValid(target)) {
+        std::cout << "Usage: go <number>. Use 'look' to see the exits.\n";
+        return;
+    }
+    if (!map.areConnected(player.getLocation(), target)) {
+        std::cout << "You can't get there directly from here.\n";
+        return;
+    }
+    if (map.getLocation(target).isLocked()) {
+        std::cout << "The " << map.getLocation(target).getName()
+                  << " is locked. You need to find a way to open it.\n";
+        return;
+    }
+    spend(map.walkingMinutes(player.getLocation(), target));
+    player.moveTo(target);
+    routeLog.push_back(target);
+    cmdLook();
+}
+
+void GameManager::cmdBack() {
+    int before = player.getLocation();
+    if (!player.goBack()) {
+        std::cout << "There is nowhere to go back to yet.\n";
+        return;
+    }
+    spend(map.walkingMinutes(before, player.getLocation()));
+    routeLog.push_back(player.getLocation());
+    cmdLook();
+}
+
+void GameManager::collectClue(Clue* clue) {
+    if (!player.addClue(clue)) return;
+    findLog.push_back({clue->getId(), clock.getElapsed()});
+    clue->examine();
+
+    // A clue may be the key to a locked location.
+    for (int i = 0; i < map.size(); ++i) {
+        Location& loc = map.getLocation(i);
+        if (loc.isLocked() && loc.getRequiredClueId() == clue->getId()) {
+            loc.unlock();
+            std::cout << "  This unlocks the " << loc.getName() << "!\n";
+        }
+    }
+}
+
 
 
 
