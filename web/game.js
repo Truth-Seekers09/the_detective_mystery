@@ -371,3 +371,115 @@ async function endGame(){
   $('end').classList.add('open');
 }
 
+// ------------------------------------------------------------ start / menu
+async function startGame(mode){
+  Sfx.unlock(); Sfx.startAmbient(); G.name = ($('nameIn').value || 'Detective').trim().slice(0,18);
+  const tutorial = mode === 'tutorial'; Intro.fxStop(); Intro.tutStop();
+  G.S = await api('/api/new?difficulty=' + (tutorial ? 'normal&mode=tutorial' : G.diff)); G.log = []; G.routeCache = {}; G.busy = true; G.dlg = null; G.walked = 0;
+  blackNow(); $('menu').classList.remove('open'); $('end').classList.remove('open'); $('dlg').classList.add('hidden');
+  if (!tutorial) await Intro.playOpening();
+  blackDone(); G.mode = 'play'; $('fade').style.opacity = 1; await sleep(300);
+  enterLocation(G.S.location, null); updateHUD(); ['hud','dock','miniWrap','keys'].forEach(i => $(i).classList.remove('hidden'));
+  $('tcSmall').textContent = tutorial ? 'Practice case' : '07:00 AM · Graphic Era Deemed University'; $('tcBig').textContent = G.S.title; $('tcSub').textContent = tutorial ? 'A small case to learn the controls.' : 'The exam paper is missing. You have one accusation.';
+  $('cine').classList.add('on','title'); await fade(false); await sleep(tutorial ? 1800 : 2400); $('cine').classList.remove('title','on');
+  if (tutorial) Intro.tutStart();
+  await showDialog({name:'Case file', face:detectivePortraitSVG(), text:G.S.intro + (tutorial ? '' : '\n\nWalk with A / D or the arrow keys. Press E at glowing doors and people, F to search.')});
+  G.busy = false;
+}
+// ------------------------------------------------------------ save / resume / pause
+async function refreshSave(){
+  try {
+    const h = await api('/api/hassave'), b = $('resumeBtn');
+    if (h.exists){ const t = 420 + h.elapsed, hh = Math.floor(t/60)%24, mm = t%60; b.textContent = `▶ Continue saved game · ${h.difficulty} · ${hh%12||12}:${String(mm).padStart(2,'0')} ${hh<12?'AM':'PM'}`; b.classList.remove('hidden'); }
+    else b.classList.add('hidden');
+  } catch(e){}
+}
+async function resumeGame(){
+  Sfx.unlock(); Sfx.startAmbient(); G.name = ($('nameIn').value || 'Detective').trim().slice(0,18); Intro.fxStop(); Intro.tutStop();
+  const S = await api('/api/load'); if (S.error){ toast('⚠ ' + esc(S.error), 'bad'); return; }
+  G.S = S; G.log = []; G.routeCache = {}; G.busy = true; G.dlg = null; G.walked = 0;
+  blackNow(); $('menu').classList.remove('open'); $('end').classList.remove('open'); $('dlg').classList.add('hidden');
+  blackDone(); G.mode = 'play'; $('fade').style.opacity = 1; await sleep(300);
+  enterLocation(S.location, null); updateHUD(); refreshFlags(); ['hud','dock','miniWrap','keys'].forEach(i => $(i).classList.remove('hidden'));
+  $('tcSmall').textContent = S.time + ' · ' + S.difficulty; $('tcBig').textContent = 'Case resumed'; $('tcSub').textContent = S.locations[S.location].name + ' · ' + S.journal.length + ' clues on your board';
+  $('cine').classList.add('on','title'); await fade(false); await sleep(1800); $('cine').classList.remove('title','on'); G.busy = false;
+}
+function openPause(){
+  if (G.mode !== 'play' || G.busy || !G.S || !G.S.running) return;
+  $('pSave').disabled = !!G.S.tutorial; $('pSave').textContent = G.S.tutorial ? '💾 Saving is off in practice' : '💾 Save game';
+  $('pQuit').textContent = 'Quit to menu'; $('pQuit').dataset.sure = ''; $('pMute').textContent = Sfx.isMuted() ? '🔇 Sound off' : '🔊 Sound on';
+  openModal('pause');
+}
+$('pauseBtn').onclick = openPause; $('pResume').onclick = closeModals;
+$('pSave').onclick = async () => { const r = await api('/api/save'); if (r.ok){ Sfx.find(); toast('💾 <b>Game saved</b><small>Use “Continue saved game” on the main menu</small>'); } else toast('Could not save the game', 'bad'); };
+$('pGuide').onclick = () => Intro.openGuide(false);
+$('pMute').onclick = () => { const m = Sfx.toggle(); $('pMute').textContent = m ? '🔇 Sound off' : '🔊 Sound on'; $('muteBtn').textContent = m ? '🔇' : '🔊'; };
+$('pVol').oninput = e => Sfx.setVolume(e.target.value/100);
+$('pQuit').onclick = () => { const b = $('pQuit'); if (!b.dataset.sure){ b.dataset.sure = '1'; b.textContent = 'Click again to quit (unsaved progress is lost)'; return; } closeModals(); backToMenu(); };
+$('resumeBtn').onclick = resumeGame; $('bBack').onclick = doBack;
+function backToMenu(){
+  Intro.fxStop(); Intro.tutStop(); $('end').classList.remove('open'); $('casefile').classList.remove('open'); $('menu').classList.add('open');
+  refreshSave(); G.mode = 'menu'; G.busy = false; G.S = G.S && null; api('/api/state').then(s => { G.S = s; });
+  ['hud','dock','miniWrap','keys'].forEach(i => $(i).classList.add('hidden')); $('dlg').classList.add('hidden'); G.dlg = null; G.loc = 10; G.npcs = []; G.portals = []; G.spot = null;
+}
+$('startBtn').onclick = () => startGame('main'); $('tutBtn').onclick = () => startGame('tutorial'); $('realBtn').onclick = () => startGame('main');
+$('againBtn').onclick = backToMenu; $('fileBtn').onclick = () => Intro.showCaseFile();
+$('guideBtn').onclick = () => Intro.openGuide(false);
+$('teamBtn').onclick = () => { $('menu').classList.remove('open'); $('splash').classList.add('open'); document.querySelector('.loadBox').style.display = 'none'; $('pressKey').textContent = 'Press any key to go back'; $('pressKey').classList.add('on'); const back = () => { removeEventListener('keydown', back); removeEventListener('mousedown', back); $('splash').classList.remove('open'); $('menu').classList.add('open'); }; setTimeout(() => { addEventListener('keydown', back); addEventListener('mousedown', back); }, 250); };
+document.querySelectorAll('#diffs button').forEach(b => b.onclick = () => { Sfx.click(); G.diff = b.dataset.d; document.querySelectorAll('#diffs button').forEach(x => x.classList.toggle('on', x === b)); });
+document.querySelectorAll('[data-close]').forEach(b => b.onclick = closeModals);
+document.querySelectorAll('.overlay').forEach(o => o.addEventListener('mousedown', e => { if (e.target === o && !['menu','end','splash','guide'].includes(o.id)) closeModals(); }));
+$('bSearch').onclick = doSearch; $('bHint').onclick = doHint; $('bJournal').onclick = () => openModal('journal'); $('bSuspects').onclick = () => openModal('suspects'); $('bAccuse').onclick = () => openModal('accuse');
+$('bDeduce').onclick = doDeduce; $('accuseGo').onclick = doAccuse; $('logBtn').onclick = () => openModal('logDrawer');
+$('muteBtn').onclick = () => { const m = Sfx.toggle(); $('muteBtn').textContent = m ? '🔇' : '🔊'; };
+$('dlg').onclick = advanceDialog;
+
+// ------------------------------------------------------------ input
+function interact(){
+  if (G.dlg){ advanceDialog(); return; } if (G.busy || G.modal || !G.focus) return; const f = G.focus;
+  if (f.kind === 'portal') travel(G.portals[f.i].to); else if (f.kind === 'npc') doInterrogate(G.npcs[f.i]); else if (f.kind === 'spot') doSearch();
+}
+addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT') { if (e.key === 'Enter' && G.mode === 'menu') startGame('main'); return; }
+  const k = e.key.length === 1 ? e.key.toLowerCase() : e.key; if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown',' '].includes(k)) e.preventDefault();
+  if (k === 'Escape'){ if ($('guide').classList.contains('open')) document.querySelector('#guide [data-close]').click(); else if (G.modal) closeModals(); else if ($('miniWrap').classList.contains('big')) $('miniWrap').classList.remove('big'); else if (G.dlg) advanceDialog(); else openPause(); return; }
+  if (G.mode !== 'play' || !G.S) return;
+  G.keys[k] = true; if (k === 'Shift') G.keys.Shift = true;
+  if (e.repeat) return;
+  if (k === ' ' || k === 'Enter'){ if (G.dlg) advanceDialog(); else if (!G.modal) interact(); return; }
+  if (k === 'e'){ if (G.dlg) advanceDialog(); else interact(); return; }
+  const modalKey = {j:'journal', u:'suspects', l:'logDrawer'}[k];
+  if (modalKey){ G.modal === modalKey ? closeModals() : (!G.busy || G.dlg ? openModal(modalKey) : 0); return; }
+  if (G.modal || G.dlg) return;
+  if (k === 'f') doSearch(); else if (k === 'b') doBack(); else if (k === 'h') doHint(); else if (k === 'm') $('miniWrap').classList.toggle('big'); else if (k === 'x') openModal('accuse');
+});
+addEventListener('keyup', e => { const k = e.key.length === 1 ? e.key.toLowerCase() : e.key; G.keys[k] = false; if (k === 'Shift') G.keys.Shift = false; });
+addEventListener('blur', () => { G.keys = {}; });
+// click-to-walk and click-to-interact on the scene
+$('stage').addEventListener('mousedown', e => {
+  if (G.mode !== 'play' || G.busy || G.modal || G.dlg) return; Sfx.unlock();
+  const s = Scene.scale(), d = Scene.dpr(), wx = e.clientX*d/s + G.camX, wy = e.clientY*d/s;
+  const np = G.npcs.find(n => Math.abs(wx - n.x) < 55 && wy > n.y - 200 && wy < n.y + 10); if (np){ doInterrogate(np); return; }
+  const pt = G.portals.find(p => Math.abs(wx - p.x) < 60 && wy > 340); if (pt){ travel(pt.to); return; }
+  if (G.spot && !G.spot.searched && Math.abs(wx - G.spot.x) < 60 && wy > 540){ doSearch(); return; }
+  G.player.y = clamp(wy, LANE_MIN, LANE_MAX); walkTo(wx);
+});
+
+// ------------------------------------------------------------ main loop
+let last = performance.now(), frameN = 0;
+function frame(now){
+  const dt = Math.min(.05, (now - last)/1000); last = now; G.t += dt; frameN++;
+  Scene.resize(); update(dt);
+  const S = G.S;
+  Scene.render({place:(S&&S.locations&&S.locations[G.loc])?S.locations[G.loc].name:'', practice:!!(S&&S.tutorial), loc:G.loc, tod:G.tod, t:G.t, camX:G.camX, player:G.player, npcs:G.npcs.filter(n => !n.gone), crowd:G.crowd, portals:G.portals, spot:G.spot, focus:G.focus,
+    minutesTotal:S ? S.minutesTotal : 180, minutesLeft:S ? S.minutesLeft : 180});
+  if (frameN % 2 === 0 && G.mode === 'play') drawMap();
+  requestAnimationFrame(frame);
+}
+(async function init(){
+  Scene.resize($('stage'));
+  try { G.S = await api('/api/state'); } catch(e){}
+  setInterval(() => { fetch('/api/ping').catch(() => {}); }, 5000);
+  Intro.wireGuide(); Intro.boot(); refreshSave();
+  requestAnimationFrame(frame);
+})();
